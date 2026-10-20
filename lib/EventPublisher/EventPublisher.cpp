@@ -3,8 +3,8 @@
 EventPublisher::EventPublisher()
     : mqtt(wifiClient)
 {
-    lastReconnectAttempt = 0;
-    wifiWasConnected = false;
+    queue = nullptr;
+    online = false;
 }
 
 void EventPublisher::begin(
@@ -26,63 +26,134 @@ void EventPublisher::begin(
 
     topic = String(topicPrefix) + "/" + deviceId + "/events";
 
+    queue = xQueueCreate(8, sizeof(Message));
+
     mqtt.setServer(mqttHost, mqttPort);
 
-    // PubSubClient's default connect timeout is 15 s, which would freeze
-    // the keypad. Keep a failed attempt short.
-    mqtt.setSocketTimeout(2);
+    // The simulated network can take several seconds to answer CONNECT.
+    // This only delays the network task, never the locker.
+    mqtt.setSocketTimeout(8);
+
+    xTaskCreatePinnedToCore(
+        taskEntry,
+        "events",
+        6144,
+        this,
+        1,
+        nullptr,
+        0
+    );
+}
+
+void EventPublisher::taskEntry(void* self)
+{
+    static_cast<EventPublisher*>(self)->run();
+}
+
+// Network task: owns WiFi and the MQTT client (PubSubClient is not
+// thread-safe, so nothing else may touch it).
+void EventPublisher::run()
+{
+    Serial.println("Event publisher: connecting to WiFi...");
 
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, password, wifiChannel);
 
-    Serial.println("Event publisher: connecting to WiFi...");
-}
+    bool wifiWasUp = false;
+    unsigned long lastAttempt = 0;
+    unsigned long connectedAt = 0;
+    bool firstAttempt = true;
 
-void EventPublisher::update()
-{
-    bool wifiUp = WiFi.status() == WL_CONNECTED;
+    // A broker allows one connection per client id and drops the older one
+    // when a second connects with the same id. Add a random suffix so two
+    // boots (or two simulators) of the same device never kick each other.
+    char suffix[9];
+    snprintf(suffix, sizeof(suffix), "%08x", (unsigned int)esp_random());
+    String clientId = deviceId + "-" + suffix;
 
-    if (wifiUp && !wifiWasConnected)
+    for (;;)
     {
-        Serial.println("Event publisher: WiFi connected.");
-    }
-    else if (!wifiUp && wifiWasConnected)
-    {
-        Serial.println("Event publisher: WiFi lost.");
-    }
+        bool wifiUp = WiFi.status() == WL_CONNECTED;
 
-    wifiWasConnected = wifiUp;
+        if (wifiUp != wifiWasUp)
+        {
+            Serial.println(
+                wifiUp ? "Event publisher: WiFi connected."
+                       : "Event publisher: WiFi lost."
+            );
+            wifiWasUp = wifiUp;
+        }
 
-    if (!wifiUp)
-        return;
+        if (!wifiUp)
+        {
+            online = false;
+            vTaskDelay(pdMS_TO_TICKS(200));
+            continue;
+        }
 
-    if (mqtt.connected())
-    {
+        if (!mqtt.connected())
+        {
+            if (online)
+            {
+                Serial.print("Event publisher: MQTT connection lost, state=");
+                Serial.print(mqtt.state());
+                Serial.print(" after ");
+                Serial.print((millis() - connectedAt) / 1000);
+                Serial.println(" s");
+            }
+
+            online = false;
+
+            unsigned long now = millis();
+
+            if (firstAttempt || now - lastAttempt >= RECONNECT_INTERVAL)
+            {
+                firstAttempt = false;
+                lastAttempt = now;
+
+                if (mqtt.connect(clientId.c_str()))
+                {
+                    Serial.print("Event publisher: MQTT connected as ");
+                    Serial.println(clientId);
+                    online = true;
+                    connectedAt = millis();
+                }
+                else
+                {
+                    Serial.print("Event publisher: MQTT connect failed, rc=");
+                    Serial.println(mqtt.state());
+                }
+            }
+
+            vTaskDelay(pdMS_TO_TICKS(100));
+            continue;
+        }
+
+        online = true;
         mqtt.loop();
-        return;
-    }
 
-    unsigned long now = millis();
+        Message msg;
 
-    if (now - lastReconnectAttempt < RECONNECT_INTERVAL)
-        return;
+        while (xQueueReceive(queue, &msg, 0) == pdTRUE)
+        {
+            if (mqtt.publish(topic.c_str(), msg.payload))
+            {
+                Serial.print("Event published: ");
+                Serial.println(msg.payload);
+            }
+            else
+            {
+                Serial.println("Event publisher: publish failed.");
+            }
+        }
 
-    lastReconnectAttempt = now;
-
-    if (mqtt.connect(deviceId.c_str()))
-    {
-        Serial.println("Event publisher: MQTT connected.");
-    }
-    else
-    {
-        Serial.print("Event publisher: MQTT connect failed, rc=");
-        Serial.println(mqtt.state());
+        vTaskDelay(pdMS_TO_TICKS(20));
     }
 }
 
 bool EventPublisher::isOnline()
 {
-    return mqtt.connected();
+    return online;
 }
 
 void EventPublisher::publishAuth(
@@ -93,17 +164,17 @@ void EventPublisher::publishAuth(
     const char* reason
 )
 {
-    if (!mqtt.connected())
+    if (!online)
     {
         Serial.println("Event publisher: offline, event dropped.");
         return;
     }
 
-    char payload[192];
+    Message msg;
 
     int len = snprintf(
-        payload,
-        sizeof(payload),
+        msg.payload,
+        sizeof(msg.payload),
         "{\"locker\":%d,\"method\":\"%s\",\"ok\":%s",
         lockerId,
         authMethodName(method),
@@ -111,26 +182,17 @@ void EventPublisher::publishAuth(
     );
 
     if (userId >= 0)
-        len += snprintf(payload + len, sizeof(payload) - len,
+        len += snprintf(msg.payload + len, sizeof(msg.payload) - len,
                         ",\"user\":%d", userId);
 
     if (reason != nullptr)
-        len += snprintf(payload + len, sizeof(payload) - len,
+        len += snprintf(msg.payload + len, sizeof(msg.payload) - len,
                         ",\"reason\":\"%s\"", reason);
 
-    if (granted)
-        len += snprintf(payload + len, sizeof(payload) - len,
-                        ",\"door\":\"open\"");
+    snprintf(msg.payload + len, sizeof(msg.payload) - len, "}");
 
-    snprintf(payload + len, sizeof(payload) - len, "}");
-
-    if (mqtt.publish(topic.c_str(), payload))
+    if (xQueueSend(queue, &msg, 0) != pdTRUE)
     {
-        Serial.print("Event published: ");
-        Serial.println(payload);
-    }
-    else
-    {
-        Serial.println("Event publisher: publish failed.");
+        Serial.println("Event publisher: queue full, event dropped.");
     }
 }

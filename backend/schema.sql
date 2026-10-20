@@ -1,56 +1,73 @@
--- Smart Locker schema (Phase 1).
+-- Additions to the existing smart_locker database.
 -- Apply with:  python -m app.init_db   (idempotent, safe to re-run)
+--
+-- The base tables (users, lockers, locker_permissions, rfid_credentials,
+-- fingerprint_credentials, user_pins, face_profiles, access_logs) already
+-- exist and are NOT created or altered here. This file only adds:
+--
+--   * sim_labels  ground truth for simulator-generated access_logs rows
+--                 ('normal' or the attack name). Real device events have no
+--                 row here. Phase 2 uses it to score the anomaly detector.
+--   * alerts      suspicious activity found by the rule engine or the
+--                 anomaly model (Phase 2), one row per alert.
+--   * face_embeddings / face_snapshots  face recognition (Phase 3): enrolled
+--                 face vectors per face_profiles row, and the camera photos
+--                 attached to alerts.
+--   * two indexes on access_logs for time-window queries.
 
-CREATE TABLE IF NOT EXISTS users (
-    id          SERIAL PRIMARY KEY,
-    name        TEXT NOT NULL,
-    created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+CREATE TABLE IF NOT EXISTS sim_labels (
+    access_log_id  BIGINT PRIMARY KEY
+                   REFERENCES access_logs(id) ON DELETE CASCADE,
+    label          TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS lockers (
-    id              SERIAL PRIMARY KEY,
-    name            TEXT NOT NULL,
-    security_level  TEXT NOT NULL DEFAULT 'normal'
-                    CHECK (security_level IN ('normal', 'high'))
+CREATE INDEX IF NOT EXISTS idx_access_logs_created_at
+    ON access_logs (created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_access_logs_user_created_at
+    ON access_logs (user_id, created_at DESC);
+
+-- type      BRUTE_FORCE / NO_PERMISSION_PROBE / NIGHT_ACCESS come from rules,
+--           ANOMALY from the Isolation Forest.
+-- score     model decision_function (negative = anomalous); NULL for rules.
+CREATE TABLE IF NOT EXISTS alerts (
+    id             BIGSERIAL PRIMARY KEY,
+    access_log_id  BIGINT NOT NULL REFERENCES access_logs(id) ON DELETE CASCADE,
+    user_id        BIGINT REFERENCES users(id) ON DELETE SET NULL,
+    locker_id      BIGINT REFERENCES lockers(id) ON DELETE SET NULL,
+    type           TEXT NOT NULL CHECK (type IN
+                   ('BRUTE_FORCE', 'NO_PERMISSION_PROBE', 'NIGHT_ACCESS', 'ANOMALY')),
+    severity       TEXT NOT NULL CHECK (severity IN ('low', 'medium', 'high')),
+    score          DOUBLE PRECISION,
+    explanation    TEXT NOT NULL,
+    acknowledged   BOOLEAN NOT NULL DEFAULT false,
+    created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- One row per credential. For PIN the value is a salted scrypt hash
--- ("scrypt$<salt hex>$<hash hex>"); for RFID it is the card UID
--- ("01 02 03 04"); for FINGERPRINT it is the sensor template id.
-CREATE TABLE IF NOT EXISTS credentials (
-    id       SERIAL PRIMARY KEY,
-    user_id  INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    type     TEXT NOT NULL CHECK (type IN ('PIN', 'RFID', 'FINGERPRINT')),
-    value    TEXT NOT NULL,
-    UNIQUE (type, value)
+CREATE INDEX IF NOT EXISTS idx_alerts_created_at ON alerts (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_alerts_type_locker ON alerts (type, locker_id, user_id);
+
+-- One row per enrolled photo. The 128-number vector is a biometric: it
+-- cannot recreate the photo, but treat it as sensitive personal data.
+CREATE TABLE IF NOT EXISTS face_embeddings (
+    id               BIGSERIAL PRIMARY KEY,
+    face_profile_id  BIGINT NOT NULL REFERENCES face_profiles(id) ON DELETE CASCADE,
+    model_name       TEXT NOT NULL,
+    embedding        DOUBLE PRECISION[] NOT NULL,
+    created_at       TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS permissions (
-    user_id    INT NOT NULL REFERENCES users(id)   ON DELETE CASCADE,
-    locker_id  INT NOT NULL REFERENCES lockers(id) ON DELETE CASCADE,
-    PRIMARY KEY (user_id, locker_id)
+-- Photo taken by the camera when something suspicious happened.
+-- path is relative to SNAPSHOT_DIR; matched_user_id is only a guess.
+CREATE TABLE IF NOT EXISTS face_snapshots (
+    id               BIGSERIAL PRIMARY KEY,
+    alert_id         BIGINT REFERENCES alerts(id) ON DELETE SET NULL,
+    locker_id        BIGINT REFERENCES lockers(id) ON DELETE SET NULL,
+    path             TEXT NOT NULL,
+    taken_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
+    faces_found      INT NOT NULL,
+    matched_user_id  BIGINT REFERENCES users(id) ON DELETE SET NULL,
+    similarity       DOUBLE PRECISION
 );
 
--- Every authentication attempt reported by a locker.
---   user_id   NULL when the credential was not recognised.
---   success   true only when the locker actually opened.
---   reason    NULL on success, else BAD_CREDENTIAL / NO_PERMISSION / ...
---   sim_label ground truth written ONLY by the simulator ('normal' or the
---             attack name); NULL for real device events. Used in Phase 2
---             to evaluate the anomaly detector.
-CREATE TABLE IF NOT EXISTS access_logs (
-    id          BIGSERIAL PRIMARY KEY,
-    ts          TIMESTAMPTZ NOT NULL DEFAULT now(),
-    device_id   TEXT NOT NULL,
-    locker_id   INT NOT NULL REFERENCES lockers(id),
-    user_id     INT REFERENCES users(id),
-    method      TEXT NOT NULL CHECK (method IN ('PIN', 'RFID', 'FINGERPRINT')),
-    success     BOOLEAN NOT NULL,
-    reason      TEXT,
-    door_state  TEXT CHECK (door_state IN ('open', 'closed')),
-    sim_label   TEXT
-);
-
-CREATE INDEX IF NOT EXISTS idx_access_logs_ts          ON access_logs (ts DESC);
-CREATE INDEX IF NOT EXISTS idx_access_logs_user_ts     ON access_logs (user_id, ts DESC);
-CREATE INDEX IF NOT EXISTS idx_access_logs_locker_ts   ON access_logs (locker_id, ts DESC);
+CREATE INDEX IF NOT EXISTS idx_face_snapshots_alert ON face_snapshots (alert_id);

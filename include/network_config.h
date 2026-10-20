@@ -8,10 +8,24 @@
 #define WIFI_CHANNEL 6
 
 // Must match MQTT_HOST / MQTT_PORT / MQTT_TOPIC_PREFIX in backend/.env.
-// The default broker is public: use your own topic prefix.
+// The default broker is public, so the topic prefix is the only thing that
+// keeps strangers out of the channel. It lives in secrets.h, which is
+// git-ignored: copy secrets.example.h to secrets.h and put a long random value.
 #define MQTT_HOST "broker.hivemq.com"
 #define MQTT_PORT 1883
-#define MQTT_TOPIC_PREFIX "smartlocker-dev-7c1e"
+
+#if __has_include("secrets.h")
+#include "secrets.h"
+#else
+#error "include/secrets.h is missing: copy include/secrets.example.h to include/secrets.h and set MQTT_TOPIC_PREFIX"
+#endif
+
+constexpr bool startsWith(const char* text, const char* prefix)
+{
+    return *prefix == 0 || (*text == *prefix && startsWith(text + 1, prefix + 1));
+}
+static_assert(!startsWith(MQTT_TOPIC_PREFIX, "CHANGE-ME"),
+              "set a real random MQTT_TOPIC_PREFIX in include/secrets.h");
 
 #define DEVICE_ID "locker-01"
 #define LOCKER_ID 1

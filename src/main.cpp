@@ -21,6 +21,8 @@ AuthenticationManager authentication;
 AuthorizationManager authorization;
 EventPublisher events;
 
+bool wasLockedOut = false;
+
 void setup()
 {
     Serial.begin(115200);
@@ -50,7 +52,6 @@ void setup()
 void loop()
 {
     locker.update();
-    events.update();
 
     AuthenticationResult result =
         authentication.process();
@@ -90,4 +91,19 @@ void loop()
             false, "BAD_CREDENTIAL"
         );
     }
+
+    // The attempt that trips the lockout is the one process() just
+    // reported as FAILED, so result.method is the method that was used.
+    // Report the lockout once, when it begins, after that FAILED event.
+    bool lockedOut = authentication.isLockedOut();
+
+    if (lockedOut && !wasLockedOut)
+    {
+        events.publishAuth(
+            LOCKER_ID, -1, result.method,
+            false, "LOCKOUT"
+        );
+    }
+
+    wasLockedOut = lockedOut;
 }

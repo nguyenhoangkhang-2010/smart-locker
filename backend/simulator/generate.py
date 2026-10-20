@@ -3,9 +3,9 @@
     python -m simulator.generate --days 45 --seed 42 --reset
 
 Normal behaviour: each user has habitual hours, lockers and methods.
-Attacks are injected on top and tagged in access_logs.sim_label so the
+Attacks are injected on top and tagged in the sim_labels table so the
 Phase 2 detector can be scored (precision / recall). Real device events
-have sim_label NULL.
+have no sim_labels row.
 
 Labels:
     normal               regular use (including the odd mistyped PIN)
@@ -23,21 +23,20 @@ from psycopg2.extras import execute_values
 from app.database import connect
 
 LOCAL_TZ = timezone(timedelta(hours=7))  # Vietnam; habits are defined in local time
-DEVICE = "sim-01"
 
 # method weights; a method missing from the dict is never used by that user
 PROFILES = {
-    1: {  # An: office worker, two visits a day
+    1: {  # khang: office worker, two visits a day
         "lockers": [1, 3],
         "visits": [(8.5, 0.6), (17.5, 0.8)],
         "methods": {"FINGERPRINT": 0.7, "PIN": 0.2, "RFID": 0.1},
     },
-    2: {  # Binh: one lunchtime visit
+    2: {  # an: one lunchtime visit
         "lockers": [2],
         "visits": [(13.0, 1.0)],
         "methods": {"RFID": 0.6, "FINGERPRINT": 0.4},
     },
-    3: {  # Chi: morning and afternoon
+    3: {  # binh: morning and afternoon
         "lockers": [1],
         "visits": [(10.0, 0.8), (15.5, 0.9)],
         "methods": {"PIN": 0.5, "FINGERPRINT": 0.5},
@@ -58,17 +57,14 @@ def pick(weights: dict, rng: random.Random) -> str:
 
 
 def event(ts, locker, user, method, ok, reason, label):
-    return (
-        ts,
-        DEVICE,
-        locker,
-        user,
-        method,
-        ok,
-        reason,
-        "open" if ok else None,
-        label,
-    )
+    if ok:
+        result = "SUCCESS"
+    elif reason == "NO_PERMISSION":
+        result = "DENIED"
+    else:
+        result = "FAILED"
+
+    return (ts, locker, user, method, result, reason, label)
 
 
 def normal_day(day: datetime, rng: random.Random) -> list:
@@ -120,7 +116,10 @@ def attack(kind: str, day: datetime, rng: random.Random) -> list:
         ]
 
     if kind == "unusual_method":
-        user = rng.choice(list(PROFILES))
+        # only users who have a method they never use (user 1 uses all three)
+        user = rng.choice(
+            [u for u, p in PROFILES.items() if len(p["methods"]) < len(ALL_METHODS)]
+        )
         profile = PROFILES[user]
         unused = [m for m in ALL_METHODS if m not in profile["methods"]]
         ts = at_hour(day, rng.choice([rng.uniform(5, 7), rng.uniform(20, 23)]))
@@ -151,15 +150,30 @@ def attack(kind: str, day: datetime, rng: random.Random) -> list:
     raise ValueError(kind)
 
 
+def cycle_kinds(count: int, rng: random.Random) -> list:
+    kinds = []
+    while len(kinds) < count:
+        batch = list(ATTACKS)
+        rng.shuffle(batch)
+        kinds.extend(batch)
+    return kinds[:count]
+
+
 def generate(days: int, seed: int, attack_every: float) -> list:
     rng = random.Random(seed)
     today = datetime.now(LOCAL_TZ).replace(hour=0, minute=0, second=0, microsecond=0)
     rows = []
-    for offset in range(days, 0, -1):
+
+    # Fixed number of attack days (never zero, every kind at least once)
+    # instead of a coin flip per day, so small runs are not left without attacks.
+    count = min(days, max(len(ATTACKS), round(days / attack_every)))
+    attack_days = dict(zip(rng.sample(range(days), count), cycle_kinds(count, rng)))
+
+    for index, offset in enumerate(range(days, 0, -1)):
         day = today - timedelta(days=offset)
         rows.extend(normal_day(day, rng))
-        if rng.random() < 1.0 / attack_every:
-            rows.extend(attack(rng.choice(ATTACKS), day, rng))
+        if index in attack_days:
+            rows.extend(attack(attack_days[index], day, rng))
     rows.sort(key=lambda r: r[0])
     return rows
 
@@ -172,12 +186,12 @@ def main():
         "--attack-every",
         type=float,
         default=10.0,
-        help="on average one attack scenario every N days",
+        help="one attack scenario every N days (at least one of each kind)",
     )
     parser.add_argument(
         "--reset",
         action="store_true",
-        help="delete previous simulator rows (sim_label not null) first",
+        help="delete previous simulator rows (those in sim_labels) first",
     )
     parser.add_argument(
         "--dry-run", action="store_true", help="print a summary, write nothing"
@@ -198,13 +212,24 @@ def main():
     try:
         with conn, conn.cursor() as cur:
             if args.reset:
-                cur.execute("DELETE FROM access_logs WHERE sim_label IS NOT NULL")
+                cur.execute(
+                    "DELETE FROM access_logs WHERE id IN "
+                    "(SELECT access_log_id FROM sim_labels)"
+                )
                 print(f"removed {cur.rowcount} previous simulator rows")
+
+            ids = execute_values(
+                cur,
+                "INSERT INTO access_logs (created_at, locker_id, user_id, "
+                "authentication_method, result, reason) VALUES %s RETURNING id",
+                [row[:-1] for row in rows],
+                fetch=True,
+            )
+            # RETURNING preserves the order of the inserted rows.
             execute_values(
                 cur,
-                "INSERT INTO access_logs (ts, device_id, locker_id, user_id, "
-                "method, success, reason, door_state, sim_label) VALUES %s",
-                rows,
+                "INSERT INTO sim_labels (access_log_id, label) VALUES %s",
+                [(i[0], row[-1]) for i, row in zip(ids, rows)],
             )
     finally:
         conn.close()

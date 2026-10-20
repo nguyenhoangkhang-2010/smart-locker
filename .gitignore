@@ -8,3 +8,8 @@
 backend/.env
 backend/.venv/
 __pycache__/
+backend/models/
+backend/data/
+cam/.pio/
+cam/include/cam_config.h
+include/secrets.h

@@ -4,7 +4,8 @@ import logging
 import paho.mqtt.client as mqtt
 from pydantic import ValidationError
 
-from .config import settings
+from .config import require_private_mqtt_prefix, settings
+from .detection.pipeline import handle_new_event
 from .ingest import UnknownReference, insert_event
 from .models import Event
 
@@ -15,10 +16,10 @@ class MqttIngest:
     """Subscribes to <prefix>/+/events and stores every event in PostgreSQL."""
 
     def __init__(self):
-        self._topic = f"{settings.mqtt_topic_prefix}/+/events"
+        self._topic = f"{require_private_mqtt_prefix()}/+/events"
         self._client = mqtt.Client(
             mqtt.CallbackAPIVersion.VERSION2,
-            client_id="smart-locker-backend",
+            client_id=settings.mqtt_client_id,
         )
         self._client.on_connect = self._on_connect
         self._client.on_disconnect = self._on_disconnect
@@ -33,6 +34,11 @@ class MqttIngest:
         # on its own if the broker is unreachable.
         self._client.connect_async(settings.mqtt_host, settings.mqtt_port)
         self._client.loop_start()
+
+    def publish(self, topic: str, payload: str) -> bool:
+        if not self._client.is_connected():
+            return False
+        return self._client.publish(topic, payload, qos=1).rc == mqtt.MQTT_ERR_SUCCESS
 
     def stop(self):
         self._client.loop_stop()
@@ -49,11 +55,9 @@ class MqttIngest:
         log.warning("MQTT disconnected: %s", reason_code)
 
     def _on_message(self, client, userdata, msg):
-        # <prefix>/<device_id>/events
-        device = msg.topic.split("/")[-2]
         try:
             payload = json.loads(msg.payload)
-            event = Event(**{"device": device, **payload})
+            event = Event(**payload)
             saved = insert_event(event)
         except (ValueError, TypeError, ValidationError, UnknownReference) as exc:
             log.warning("dropped event on %s: %s", msg.topic, exc)
@@ -69,3 +73,4 @@ class MqttIngest:
             "ok" if event.ok else event.reason,
             event.user,
         )
+        handle_new_event(saved["id"])

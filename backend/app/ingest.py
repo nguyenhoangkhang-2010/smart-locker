@@ -10,9 +10,9 @@ class UnknownReference(ValueError):
 
 _INSERT = """
     INSERT INTO access_logs
-        (ts, device_id, locker_id, user_id, method, success, reason, door_state)
-    VALUES (COALESCE(%s, now()), %s, %s, %s, %s, %s, %s, %s)
-    RETURNING id, ts
+        (user_id, locker_id, authentication_method, result, reason, created_at)
+    VALUES (%s, %s, %s, %s, %s, COALESCE(%s, now()))
+    RETURNING id, created_at
 """
 
 
@@ -22,20 +22,19 @@ def insert_event(event: Event) -> dict:
             cur.execute(
                 _INSERT,
                 (
-                    event.ts,
-                    event.device,
-                    event.locker,
                     event.user,
+                    event.locker,
                     event.method,
-                    event.ok,
+                    event.result,
                     event.reason,
-                    event.door,
+                    event.ts,
                 ),
             )
             row_id, ts = cur.fetchone()
     except psycopg2.errors.ForeignKeyViolation as exc:
+        who = f"user {event.user}" if event.user is not None else "user"
         raise UnknownReference(
-            f"unknown user {event.user} or locker {event.locker}"
+            f"unknown {who} or locker {event.locker}"
         ) from exc
 
     return {"id": row_id, "ts": ts}

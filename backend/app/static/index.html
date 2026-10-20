@@ -1,0 +1,605 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Smart Locker</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7;
+    --surface: #fcfcfb;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --axis: #c3c2b7;
+    --border: rgba(11, 11, 11, 0.10);
+    --wash: rgba(11, 11, 11, 0.05);
+    --series-1: #2a78d6;
+    --series-2: #eb6834;
+    --critical: #d03b3b;
+    --serious: #ec835a;
+    --warning: #fab219;
+    --good: #0ca30c;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --page: #0d0d0d;
+      --surface: #1a1a19;
+      --ink: #f0efec;
+      --ink-2: #c3c2b7;
+      --muted: #898781;
+      --grid: #2c2c2a;
+      --axis: #383835;
+      --border: rgba(255, 255, 255, 0.10);
+      --wash: rgba(255, 255, 255, 0.06);
+      --series-1: #3987e5;
+      --series-2: #d95926;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --ink: #f0efec;
+    --ink-2: #c3c2b7;
+    --muted: #898781;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --border: rgba(255, 255, 255, 0.10);
+    --wash: rgba(255, 255, 255, 0.06);
+    --series-1: #3987e5;
+    --series-2: #d95926;
+  }
+
+  * { box-sizing: border-box; }
+  html { background: var(--page); }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--ink);
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 24px 16px 48px; }
+
+  header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  h1 { font-size: 20px; font-weight: 600; margin: 0; }
+  .status { color: var(--muted); font-size: 12px; }
+  .status.error { color: var(--critical); }
+
+  /* filters: one row above everything they scope */
+  .filters { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin: 16px 0 20px; }
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--surface); }
+  .seg button { border: 0; background: transparent; color: var(--ink-2); padding: 7px 12px; font: inherit; cursor: pointer; }
+  .seg button + button { border-left: 1px solid var(--border); }
+  .seg button:hover { background: var(--wash); }
+  .seg button[aria-pressed="true"] { color: var(--ink); font-weight: 600; background: var(--wash); }
+  select, .btn {
+    border: 1px solid var(--border); border-radius: 8px; background: var(--surface);
+    color: var(--ink); padding: 7px 10px; font: inherit;
+  }
+  .btn { cursor: pointer; }
+  .btn:hover { background: var(--wash); }
+  button:focus-visible, select:focus-visible, input:focus-visible, [tabindex]:focus-visible {
+    outline: 2px solid var(--series-1); outline-offset: 2px;
+  }
+
+  main.loading .card, main.loading .tile { opacity: 0.6; }
+  .card, .tile { transition: opacity 0.15s; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; min-width: 0; }
+  .card h2 { font-size: 14px; font-weight: 600; margin: 0; }
+  .card .sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+  .card-head .tools { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
+  .card-head label { color: var(--ink-2); font-size: 12px; display: inline-flex; gap: 6px; align-items: center; }
+
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 12px; }
+  .tile { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+  .tile .label { color: var(--ink-2); font-size: 12px; }
+  .tile .value { font-size: 28px; font-weight: 600; line-height: 1.2; margin-top: 4px; }
+  .tile .note { color: var(--muted); font-size: 12px; margin-top: 2px; }
+
+  .row2 { display: grid; grid-template-columns: 3fr 2fr; gap: 12px; margin-bottom: 12px; }
+  .row3 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+
+  .legend { display: flex; gap: 16px; font-size: 12px; color: var(--ink-2); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .swatch { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+
+  .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .chart text { font: 11px system-ui, -apple-system, "Segoe UI", sans-serif; fill: var(--muted); }
+  .chart .peak { fill: var(--ink-2); font-weight: 600; }
+  .empty { color: var(--muted); padding: 32px 0; text-align: center; }
+
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; color: var(--ink-2); font-weight: 500; font-size: 12px; padding: 6px 8px; border-bottom: 1px solid var(--axis); white-space: nowrap; }
+  td { padding: 7px 8px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.time { white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--ink-2); }
+  .scroll { overflow-x: auto; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+
+  .alert { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 12px; padding: 10px 0; border-bottom: 1px solid var(--grid); }
+  .alert:last-child { border-bottom: 0; }
+  .alert.acked { opacity: 0.55; }
+  .sev { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .sev i { font-style: normal; font-size: 12px; }
+  .alert .what { font-weight: 600; }
+  .alert .when { color: var(--muted); font-size: 12px; white-space: nowrap; }
+  .alert .why { grid-column: 2 / 4; color: var(--ink-2); }
+  .alert .where { grid-column: 2 / 4; color: var(--muted); font-size: 12px; }
+  .alert-list { max-height: 420px; overflow-y: auto; }
+  .shots { grid-column: 2 / 4; display: flex; gap: 10px; flex-wrap: wrap; margin: 4px 0; }
+  .shot { display: flex; flex-direction: column; gap: 4px; width: 112px; color: var(--ink-2); font-size: 11px; text-decoration: none; }
+  .shot img { width: 112px; height: 84px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); background: var(--wash); }
+
+  .tip {
+    position: fixed; z-index: 10; pointer-events: none; display: none;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 8px 10px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15); font-size: 12px; min-width: 190px;
+  }
+  .tip .t-name { white-space: nowrap; }
+  .tip .t-head { color: var(--ink-2); margin-bottom: 4px; }
+  .tip .t-row { display: flex; align-items: center; gap: 8px; }
+  .tip .t-key { width: 10px; height: 3px; border-radius: 2px; flex: none; }
+  .tip .t-val { font-weight: 600; color: var(--ink); margin-left: auto; padding-left: 12px; font-variant-numeric: tabular-nums; }
+  .tip .t-name { color: var(--ink-2); }
+
+  .more { margin-top: 12px; text-align: center; }
+
+  @media (max-width: 900px) {
+    .kpis { grid-template-columns: repeat(2, 1fr); }
+    .row2, .row3 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Smart Locker</h1>
+    <div class="status" id="status" role="status" aria-live="polite">Đang tải…</div>
+  </header>
+
+  <div class="filters" aria-label="Bộ lọc">
+    <div class="seg" id="range" role="group" aria-label="Khoảng thời gian">
+      <button data-days="1" aria-pressed="false">Hôm nay</button>
+      <button data-days="7" aria-pressed="true">7 ngày</button>
+      <button data-days="30" aria-pressed="false">30 ngày</button>
+      <button data-days="90" aria-pressed="false">90 ngày</button>
+    </div>
+    <select id="locker" aria-label="Tủ"><option value="">Tất cả tủ</option></select>
+    <select id="result" aria-label="Kết quả">
+      <option value="">Mọi kết quả</option>
+      <option value="true">Thành công</option>
+      <option value="false">Thất bại / từ chối</option>
+    </select>
+  </div>
+
+  <main id="main">
+    <section class="kpis" aria-label="Tổng quan">
+      <div class="tile"><div class="label">Lượt truy cập</div><div class="value" id="k-events">–</div><div class="note" id="k-users"></div></div>
+      <div class="tile"><div class="label">Tỷ lệ thành công</div><div class="value" id="k-rate">–</div><div class="note" id="k-success"></div></div>
+      <div class="tile"><div class="label">Lượt thất bại hoặc bị từ chối</div><div class="value" id="k-failed">–</div><div class="note" id="k-failed-note"></div></div>
+      <div class="tile"><div class="label">Cảnh báo chưa xử lý</div><div class="value" id="k-alerts">–</div><div class="note">trong khoảng đã chọn</div></div>
+    </section>
+
+    <section class="row2">
+      <div class="card" id="card-daily">
+        <div class="card-head">
+          <div><h2>Lượt truy cập theo ngày</h2><div class="sub">Số lần xác thực mỗi ngày</div></div>
+          <div class="tools">
+            <div class="legend" aria-label="Chú thích">
+              <span><i class="swatch" style="background:var(--series-1)"></i>Thành công</span>
+              <span><i class="swatch" style="background:var(--series-2)"></i>Thất bại / từ chối</span>
+            </div>
+            <button class="btn" data-toggle="daily">Xem bảng</button>
+          </div>
+        </div>
+        <div class="chart" id="chart-daily"></div>
+        <div class="scroll" id="table-daily" hidden></div>
+      </div>
+
+      <div class="card" id="card-hourly">
+        <div class="card-head">
+          <div><h2>Theo giờ trong ngày</h2><div class="sub">Giờ địa phương, cộng dồn cả khoảng</div></div>
+          <div class="tools"><button class="btn" data-toggle="hourly">Xem bảng</button></div>
+        </div>
+        <div class="chart" id="chart-hourly"></div>
+        <div class="scroll" id="table-hourly" hidden></div>
+      </div>
+    </section>
+
+    <section class="row3">
+      <div class="card">
+        <div class="card-head">
+          <div><h2>Cảnh báo</h2><div class="sub">Do luật và mô hình phát hiện bất thường</div></div>
+          <div class="tools"><label><input type="checkbox" id="unacked" checked> Chỉ chưa xử lý</label></div>
+        </div>
+        <div class="alert-list" id="alerts"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div><h2>Người dùng</h2><div class="sub">Quyền mở tủ và số thông tin xác thực đã đăng ký</div></div></div>
+        <div class="scroll" id="users"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><div><h2>Nhật ký truy cập</h2><div class="sub" id="log-sub"></div></div></div>
+      <div class="scroll" id="log"></div>
+      <div class="more"><button class="btn" id="more" hidden>Tải thêm</button></div>
+    </section>
+  </main>
+</div>
+<div class="tip" id="tip" role="tooltip"></div>
+
+<script>
+"use strict";
+
+const METHOD = { PIN: "Mã PIN", RFID: "Thẻ RFID", FINGERPRINT: "Vân tay", FACE: "Khuôn mặt" };
+const RESULT = { SUCCESS: "Thành công", FAILED: "Sai thông tin", DENIED: "Không có quyền", LOCKOUT: "Bị khóa" };
+const ALERT_TYPE = {
+  BRUTE_FORCE: "Dò mật khẩu / thẻ",
+  NO_PERMISSION_PROBE: "Dò quyền truy cập",
+  NIGHT_ACCESS: "Truy cập ban đêm",
+  ANOMALY: "Hành vi bất thường",
+};
+// status colours are fixed and always paired with an icon and a label
+const SEVERITY = {
+  high: { label: "Cao", icon: "▲", color: "var(--critical)" },
+  medium: { label: "Trung bình", icon: "◆", color: "var(--serious)" },
+  low: { label: "Thấp", icon: "●", color: "var(--warning)" },
+};
+
+const state = { days: 7, locker: "", success: "", unacked: true, pageSize: 25, logRows: [], logDone: false };
+const charts = [];
+
+const $ = (selector) => document.querySelector(selector);
+
+// DOM helper: strings are always inserted as text, never as HTML
+function h(tag, props = {}, ...kids) {
+  const el = document.createElement(tag);
+  for (const [key, value] of Object.entries(props)) {
+    if (key === "class") el.className = value;
+    else if (key.startsWith("on")) el.addEventListener(key.slice(2), value);
+    else if (value === true) el.setAttribute(key, "");
+    else if (value !== false && value != null) el.setAttribute(key, value);
+  }
+  for (const kid of kids.flat()) if (kid != null) el.append(kid);
+  return el;
+}
+const SVG = "http://www.w3.org/2000/svg";
+function s(tag, attrs = {}, ...kids) {
+  const el = document.createElementNS(SVG, tag);
+  for (const [key, value] of Object.entries(attrs)) el.setAttribute(key, value);
+  for (const kid of kids) el.append(kid);
+  return el;
+}
+
+const fmt = new Intl.NumberFormat("vi-VN");
+const pad = (n) => String(n).padStart(2, "0");
+function dateTime(iso) {
+  const d = new Date(iso);
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+function shortDay(iso) { const [, m, d] = iso.split("-"); return `${d}/${m}`; }
+
+async function api(path, params = {}) {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) if (value !== "" && value != null) query.set(key, value);
+  const response = await fetch(`${path}?${query}`);
+  if (!response.ok) throw new Error(`${path} ${response.status}`);
+  return response.json();
+}
+const scope = () => ({ days: state.days, locker: state.locker });
+
+/* ---------- stacked column chart (SVG) ---------- */
+
+const tip = $("#tip");
+function showTip(anchor, head, rows) {
+  tip.replaceChildren(
+    h("div", { class: "t-head" }, head),
+    ...rows.map((row) =>
+      h("div", { class: "t-row" },
+        row.color ? h("span", { class: "t-key", style: `background:${row.color}` }) : h("span", { class: "t-key" }),
+        h("span", { class: "t-name" }, row.name),
+        h("span", { class: "t-val" }, fmt.format(row.value))
+      )
+    )
+  );
+  tip.style.display = "block";
+  const box = anchor.getBoundingClientRect();
+  const w = tip.offsetWidth, hgt = tip.offsetHeight;
+  let x = box.left + box.width / 2 - w / 2;
+  x = Math.max(8, Math.min(x, window.innerWidth - w - 8));
+  let y = box.top - hgt - 8;
+  if (y < 8) y = box.bottom + 8;
+  tip.style.left = `${x}px`;
+  tip.style.top = `${y}px`;
+}
+const hideTip = () => { tip.style.display = "none"; };
+
+function niceScale(max) {
+  if (max <= 0) return { top: 4, step: 1 };
+  const raw = max / 4;
+  const mag = 10 ** Math.floor(Math.log10(raw));
+  const step = Math.max(1, [1, 2, 5, 10].map((m) => m * mag).find((v) => v >= raw));
+  return { top: Math.ceil(max / step) * step, step };
+}
+const compact = (n) => (n >= 1000 ? `${n / 1000}K` : String(n));
+
+// 4px rounded data-end, square at the baseline / inner joint
+function columnPath(x, y, w, hgt, round) {
+  const r = Math.min(4, w / 2, hgt);
+  if (!round || r <= 0) return `M${x},${y}h${w}v${hgt}h${-w}Z`;
+  return `M${x},${y + hgt}V${y + r}A${r},${r} 0 0 1 ${x + r},${y}H${x + w - r}A${r},${r} 0 0 1 ${x + w},${y + r}V${y + hgt}Z`;
+}
+
+function drawStacked(host, rows, cfg) {
+  const width = host.clientWidth;
+  if (!width) return;
+  const height = 230;
+  const m = { left: 34, right: 6, top: 18, bottom: 24 };
+  const plotW = width - m.left - m.right, plotH = height - m.top - m.bottom;
+  const total = (r) => r.success + r.failed;
+  const max = Math.max(0, ...rows.map(total));
+
+  if (max === 0) {
+    host.replaceChildren(h("div", { class: "empty" }, "Chưa có dữ liệu trong khoảng này"));
+    return;
+  }
+
+  const { top, step } = niceScale(max);
+  const y = (v) => m.top + plotH - (v / top) * plotH;
+  const band = plotW / rows.length;
+  const barW = Math.max(2, Math.min(24, band * 0.7));
+
+  const svg = s("svg", { viewBox: `0 0 ${width} ${height}`, role: "img", "aria-label": cfg.aria });
+
+  for (let v = 0; v <= top; v += step) {
+    svg.append(s("line", { x1: m.left, x2: width - m.right, y1: y(v), y2: y(v), stroke: v === 0 ? "var(--axis)" : "var(--grid)", "stroke-width": 1 }));
+    const label = s("text", { x: m.left - 6, y: y(v) + 4, "text-anchor": "end" });
+    label.textContent = compact(v);
+    svg.append(label);
+  }
+
+  const wash = s("rect", { y: m.top, height: plotH, fill: "var(--wash)", visibility: "hidden" });
+  svg.append(wash);
+
+  const every = Math.ceil(rows.length / Math.max(2, Math.floor(plotW / 54)));
+  const peak = rows.reduce((best, r, i) => (total(r) > total(rows[best]) ? i : best), 0);
+
+  rows.forEach((r, i) => {
+    const cx = m.left + band * i + band / 2;
+    const x = cx - barW / 2;
+    const gap = r.success > 0 && r.failed > 0 ? 2 : 0;
+    const hs = r.success ? Math.max(2, (r.success / top) * plotH) : 0;
+    const hf = r.failed ? Math.max(2, (r.failed / top) * plotH - gap) : 0;
+
+    if (hs) svg.append(s("path", { d: columnPath(x, y(0) - hs, barW, hs, !hf), fill: "var(--series-1)" }));
+    if (hf) svg.append(s("path", { d: columnPath(x, y(0) - hs - gap - hf, barW, hf, true), fill: "var(--series-2)" }));
+
+    if (i % every === 0) {
+      const tick = s("text", { x: cx, y: height - 6, "text-anchor": "middle" });
+      tick.textContent = cfg.tick(r);
+      svg.append(tick);
+    }
+    if (i === peak) {
+      const cap = s("text", { x: cx, y: y(0) - hs - gap - hf - 5, "text-anchor": "middle", class: "peak" });
+      cap.textContent = fmt.format(total(r));
+      svg.append(cap);
+    }
+
+    const show = () => {
+      wash.setAttribute("x", m.left + band * i);
+      wash.setAttribute("width", band);
+      wash.setAttribute("visibility", "visible");
+      showTip(hit, cfg.label(r), [
+        { name: "Thành công", value: r.success, color: "var(--series-1)" },
+        { name: "Thất bại / từ chối", value: r.failed, color: "var(--series-2)" },
+        { name: "Tổng", value: total(r) },
+      ]);
+    };
+    const hide = () => { wash.setAttribute("visibility", "hidden"); hideTip(); };
+    const hit = s("rect", {
+      x: m.left + band * i, y: m.top, width: band, height: plotH, fill: "transparent",
+      tabindex: rows.length <= 31 ? 0 : -1, role: "img",
+      "aria-label": `${cfg.label(r)}: ${r.success} thành công, ${r.failed} thất bại`,
+    });
+    hit.addEventListener("pointerenter", show);
+    hit.addEventListener("pointerleave", hide);
+    hit.addEventListener("focus", show);
+    hit.addEventListener("blur", hide);
+    svg.append(hit);
+  });
+
+  host.replaceChildren(svg);
+}
+
+function chartTable(rows, labelOf, head) {
+  return h("table", {},
+    h("thead", {}, h("tr", {}, h("th", {}, head), h("th", { class: "num" }, "Thành công"), h("th", { class: "num" }, "Thất bại / từ chối"), h("th", { class: "num" }, "Tổng"))),
+    h("tbody", {}, rows.map((r) =>
+      h("tr", {}, h("td", {}, labelOf(r)), h("td", { class: "num" }, fmt.format(r.success)), h("td", { class: "num" }, fmt.format(r.failed)), h("td", { class: "num" }, fmt.format(r.success + r.failed)))
+    ))
+  );
+}
+
+function setChart(id, rows, cfg, tableHead) {
+  let entry = charts.find((c) => c.id === id);
+  if (!entry) {
+    entry = { id, host: $(`#chart-${id}`) };
+    charts.push(entry);
+    new ResizeObserver(() => drawStacked(entry.host, entry.rows, entry.cfg)).observe(entry.host);
+  }
+  entry.rows = rows;
+  entry.cfg = cfg;
+  drawStacked(entry.host, rows, cfg);
+  $(`#table-${id}`).replaceChildren(chartTable(rows, cfg.label, tableHead));
+}
+
+document.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-toggle]");
+  if (!button) return;
+  const id = button.dataset.toggle;
+  const tableEl = $(`#table-${id}`), chartEl = $(`#chart-${id}`);
+  const showTable = tableEl.hidden;
+  tableEl.hidden = !showTable;
+  chartEl.hidden = showTable;
+  button.textContent = showTable ? "Xem biểu đồ" : "Xem bảng";
+  if (!showTable) { const entry = charts.find((c) => c.id === id); if (entry) drawStacked(entry.host, entry.rows, entry.cfg); }
+});
+
+/* ---------- sections ---------- */
+
+function renderKpis(sum) {
+  $("#k-events").textContent = fmt.format(sum.events);
+  $("#k-users").textContent = `${sum.users} người dùng`;
+  $("#k-rate").textContent = sum.events ? `${Math.round((sum.success / sum.events) * 100)}%` : "–";
+  $("#k-success").textContent = `${fmt.format(sum.success)} lượt thành công`;
+  $("#k-failed").textContent = fmt.format(sum.failed);
+  $("#k-failed-note").textContent = sum.events ? `${Math.round((sum.failed / sum.events) * 100)}% tổng lượt` : "";
+  $("#k-alerts").textContent = fmt.format(sum.open_alerts);
+}
+
+function renderAlerts(list) {
+  const host = $("#alerts");
+  if (!list.length) { host.replaceChildren(h("div", { class: "empty" }, "Không có cảnh báo")); return; }
+  host.replaceChildren(...list.map((a) => {
+    const sev = SEVERITY[a.severity] || SEVERITY.low;
+    return h("div", { class: `alert${a.acknowledged ? " acked" : ""}` },
+      h("span", { class: "sev" }, h("i", { style: `color:${sev.color}`, "aria-hidden": "true" }, sev.icon), sev.label),
+      h("span", { class: "what" }, ALERT_TYPE[a.type] || a.type),
+      a.acknowledged ? h("span", { class: "when" }, "Đã xử lý")
+        : h("button", { class: "btn", onclick: () => acknowledge(a.id) }, "Đã xem"),
+      h("div", { class: "why" }, a.explanation),
+      (a.snapshots || []).length ? h("div", { class: "shots" }, a.snapshots.map(snapshotLink)) : null,
+      h("div", { class: "where" }, `${dateTime(a.event_ts)} · ${a.locker_code || "?"}${a.user_name ? " · " + a.user_name : ""}`)
+    );
+  }));
+}
+
+// a camera photo taken when the alert fired; the match is only a hint
+function snapshotLink(sn) {
+  const caption = sn.matched_user
+    ? `Giống ${sn.matched_user} (${sn.similarity.toFixed(2)})`
+    : sn.faces ? "Không khớp ai đã đăng ký" : "Không thấy khuôn mặt";
+  return h("a", { class: "shot", href: `/face/snapshots/${sn.id}/image`, target: "_blank", rel: "noopener" },
+    h("img", { src: `/face/snapshots/${sn.id}/image`, alt: "Ảnh từ camera lúc có cảnh báo", loading: "lazy" }),
+    h("span", {}, caption));
+}
+
+async function acknowledge(id) {
+  await fetch(`/alerts/${id}/ack`, { method: "POST" });
+  refresh();
+}
+
+function renderUsers(list) {
+  const cred = (n) => (n ? fmt.format(n) : "–");
+  $("#users").replaceChildren(h("table", {},
+    h("thead", {}, h("tr", {},
+      h("th", {}, "Người dùng"), h("th", {}, "Tủ được mở"),
+      ["PIN", "RFID", "Vân tay", "Mặt"].map((t) => h("th", { class: "num" }, t)))),
+    h("tbody", {}, list.map((u) =>
+      h("tr", {},
+        h("td", {}, u.full_name, u.is_active ? "" : " (đã khóa)"),
+        h("td", {}, u.lockers.length ? u.lockers.join(", ") : "–"),
+        h("td", { class: "num" }, cred(u.pin)), h("td", { class: "num" }, cred(u.rfid)),
+        h("td", { class: "num" }, cred(u.fingerprint)), h("td", { class: "num" }, cred(u.face))))))
+  );
+}
+
+function logTable(rows) {
+  if (!rows.length) return h("div", { class: "empty" }, "Chưa có sự kiện nào");
+  return h("table", {},
+    h("thead", {}, h("tr", {}, ["Thời gian", "Tủ", "Người dùng", "Phương thức", "Kết quả"].map((t) => h("th", {}, t)))),
+    h("tbody", {}, rows.map((r) =>
+      h("tr", {},
+        h("td", { class: "time" }, dateTime(r.ts)),
+        h("td", {}, r.locker_code || "?"),
+        h("td", {}, r.user_name || "Không xác định"),
+        h("td", {}, METHOD[r.method] || r.method),
+        h("td", {}, h("span", { class: "dot", style: `background:var(${r.result === "SUCCESS" ? "--series-1" : "--series-2"})` }), RESULT[r.result] || r.result)))));
+}
+
+function renderLog() {
+  $("#log").replaceChildren(logTable(state.logRows));
+  $("#more").hidden = state.logDone;
+  $("#log-sub").textContent = `${state.logRows.length} sự kiện mới nhất trong khoảng đã chọn`;
+}
+
+async function loadLog(reset) {
+  if (reset) { state.logRows = []; state.logDone = false; }
+  const rows = await api("/events", { ...scope(), success: state.success, limit: reset ? Math.max(state.pageSize, state.logRows.length) : state.pageSize, offset: reset ? 0 : state.logRows.length });
+  state.logRows = reset ? rows : state.logRows.concat(rows);
+  state.logDone = rows.length < state.pageSize;
+  renderLog();
+}
+
+/* ---------- refresh ---------- */
+
+let refreshing = false;
+async function refresh() {
+  if (refreshing) return;
+  refreshing = true;
+  $("#main").classList.add("loading");
+  try {
+    const keep = Math.max(state.pageSize, state.logRows.length);
+    const [sum, daily, hourly, alerts, users, log] = await Promise.all([
+      api("/stats/summary", scope()),
+      api("/stats/daily", scope()),
+      api("/stats/hourly", scope()),
+      api("/alerts", { ...scope(), acknowledged: state.unacked ? "false" : "", limit: 100 }),
+      api("/users"),
+      api("/events", { ...scope(), success: state.success, limit: keep }),
+    ]);
+    renderKpis(sum);
+    setChart("daily", daily, { label: (r) => shortDay(r.day), tick: (r) => shortDay(r.day), aria: "Lượt truy cập theo ngày" }, "Ngày");
+    setChart("hourly", hourly, { label: (r) => `${pad(r.hour)}:00–${pad(r.hour)}:59`, tick: (r) => `${r.hour}h`, aria: "Lượt truy cập theo giờ trong ngày" }, "Giờ");
+    renderAlerts(alerts);
+    renderUsers(users);
+    state.logRows = log;
+    state.logDone = log.length < keep;
+    renderLog();
+    const status = $("#status");
+    status.className = "status";
+    status.textContent = `Cập nhật ${new Date().toLocaleTimeString("vi-VN", { hour12: false })}`;
+  } catch (error) {
+    const status = $("#status");
+    status.className = "status error";
+    status.textContent = "Không kết nối được backend, đang giữ dữ liệu cũ";
+  } finally {
+    $("#main").classList.remove("loading");
+    refreshing = false;
+  }
+}
+
+/* ---------- wiring ---------- */
+
+$("#range").addEventListener("click", (event) => {
+  const button = event.target.closest("button");
+  if (!button) return;
+  state.days = Number(button.dataset.days);
+  document.querySelectorAll("#range button").forEach((b) => b.setAttribute("aria-pressed", String(b === button)));
+  state.logRows = [];
+  refresh();
+});
+$("#locker").addEventListener("change", (event) => { state.locker = event.target.value; state.logRows = []; refresh(); });
+$("#result").addEventListener("change", (event) => { state.success = event.target.value; state.logRows = []; refresh(); });
+$("#unacked").addEventListener("change", (event) => { state.unacked = event.target.checked; refresh(); });
+$("#more").addEventListener("click", () => loadLog(false));
+
+(async function init() {
+  try {
+    const lockers = await api("/lockers");
+    $("#locker").append(...lockers.map((l) => h("option", { value: l.id }, `${l.locker_code} – ${l.name}`)));
+  } catch (error) { /* the refresh below reports the connection problem */ }
+  refresh();
+  setInterval(() => { if (!document.hidden) refresh(); }, 10000);
+})();
+</script>
+</body>
+</html>
