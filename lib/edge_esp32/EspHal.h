@@ -4,6 +4,7 @@
 
 #include "config.h"
 #include "interfaces.h"
+#include "shift_io.h"
 
 class EspHal : public edge::Hal {
  public:
@@ -26,5 +27,7 @@ class EspHal : public edge::Hal {
   uint32_t pulseEnd_[9];                 // thời điểm nhả của từng ngăn (0 = không cấp xung)
   uint8_t pcf_;                          // trạng thái 8 chân PCF8574 (1 = nhả)
   String last1_, last2_;
+  edge::ShiftIo* shift_ = nullptr;        // bản mô phỏng Wokwi: 74HC595 + 74HC165
+  uint8_t outBits_ = 0, inBits_ = 0xFF;   // trạng thái khóa đã ghi; mức 8 cửa đọc lần gần nhất
   void writeLock(uint8_t comp, bool energise);
 };

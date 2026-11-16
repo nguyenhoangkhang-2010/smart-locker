@@ -98,8 +98,8 @@ Terminal khác (build firmware):
 Rồi mở thư mục `locker-smart` trong VS Code (cần extension **Wokwi Simulator**), bấm `F1` → **Wokwi: Start Simulator**.
 Serial Monitor sẽ in `[WIFI] da ket noi` rồi `[MQTT] da ket noi broker`. Đợi đủ hai dòng này mới thao tác.
 
-**Thử gửi và lấy hàng** (sơ đồ chỉ có 3 ngăn; công tắc trượt là cảm biến cửa, đẩy sang phải = mở, sang trái = đóng;
-LED sáng 0,5 s = solenoid được cấp xung):
+**Thử gửi và lấy hàng** (sơ đồ có **8 ngăn**: 8 công tắc trượt ở hàng dưới là cửa, đẩy sang phải = mở, sang trái = đóng;
+LED sáng 0,5 s = solenoid được cấp xung). Wokwi không có PCF8574 của đề nên bản mô phỏng dùng 74HC595 + 74HC165 thay thế (chỉ 6 chân ESP32):
 
 1. Dashboard <http://localhost:8000/> → đăng nhập → ô **Tạo đơn**: mã đơn là chữ số (ví dụ `123456`), cỡ Vừa.
 2. Trong Wokwi bấm `A`, nhập mã đơn, bấm `#`. TFT hiện "Bo hang, dong cua / Ngan N", LED ngăn N sáng.
@@ -141,7 +141,7 @@ logic firmware thật qua broker giả.
 | `backend/` | API, cầu nối MQTT, luật, dashboard; `migrations/`, `tests/` |
 | `infra/` | docker-compose, cấu hình Mosquitto + ACL |
 | `tools/` | `power_budget.py`, `make_certs.py` (+ `--revoke`), `gen_test_vectors.py`, `core_sim.cpp`, `wokwi_*` |
-| `diagram.json` | mạch Wokwi (3 ngăn mô phỏng: công tắc trượt làm reed, LED làm solenoid) |
+| `diagram.json` | mạch Wokwi 8 ngăn: công tắc trượt làm reed (đọc qua 74HC165), LED làm solenoid (qua 74HC595). Sinh bằng `tools/make_wokwi_diagram.py`; bản 3 ngăn nối thẳng GPIO để dự phòng: `tools/diagram-3slot-direct-gpio.json` |
 | `legacy/` | bản "tủ truy cập cá nhân" làm trước khi có đề, không chạy |
 
 ## Hạn chế đã biết

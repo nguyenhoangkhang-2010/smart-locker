@@ -34,58 +34,24 @@
       }
     },
     {
-      "type": "wokwi-slide-switch",
-      "id": "door1",
-      "top": 420,
+      "type": "wokwi-74hc595",
+      "id": "sr595",
+      "top": 330,
       "left": 330,
       "attrs": {}
     },
     {
-      "type": "wokwi-resistor",
-      "id": "rpu1",
-      "top": 500,
-      "left": 330,
-      "attrs": {
-        "value": "10000"
-      }
-    },
-    {
-      "type": "wokwi-slide-switch",
-      "id": "door2",
-      "top": 420,
-      "left": 420,
+      "type": "wokwi-74hc165",
+      "id": "sr165",
+      "top": 330,
+      "left": 560,
       "attrs": {}
-    },
-    {
-      "type": "wokwi-resistor",
-      "id": "rpu2",
-      "top": 500,
-      "left": 420,
-      "attrs": {
-        "value": "10000"
-      }
-    },
-    {
-      "type": "wokwi-slide-switch",
-      "id": "door3",
-      "top": 420,
-      "left": 510,
-      "attrs": {}
-    },
-    {
-      "type": "wokwi-resistor",
-      "id": "rpu3",
-      "top": 500,
-      "left": 510,
-      "attrs": {
-        "value": "10000"
-      }
     },
     {
       "type": "wokwi-led",
       "id": "led1",
-      "top": 420,
-      "left": -130,
+      "top": 130,
+      "left": 330,
       "attrs": {
         "color": "green"
       }
@@ -93,17 +59,35 @@
     {
       "type": "wokwi-resistor",
       "id": "rl1",
-      "top": 500,
-      "left": -130,
+      "top": 215,
+      "left": 305,
       "attrs": {
         "value": "220"
-      }
+      },
+      "rotate": 90
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "door1",
+      "top": 480,
+      "left": 330,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rpu1",
+      "top": 560,
+      "left": 305,
+      "attrs": {
+        "value": "10000"
+      },
+      "rotate": 90
     },
     {
       "type": "wokwi-led",
       "id": "led2",
-      "top": 420,
-      "left": -40,
+      "top": 130,
+      "left": 400,
       "attrs": {
         "color": "green"
       }
@@ -111,17 +95,35 @@
     {
       "type": "wokwi-resistor",
       "id": "rl2",
-      "top": 500,
-      "left": -40,
+      "top": 215,
+      "left": 375,
       "attrs": {
         "value": "220"
-      }
+      },
+      "rotate": 90
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "door2",
+      "top": 480,
+      "left": 400,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rpu2",
+      "top": 560,
+      "left": 375,
+      "attrs": {
+        "value": "10000"
+      },
+      "rotate": 90
     },
     {
       "type": "wokwi-led",
       "id": "led3",
-      "top": 420,
-      "left": 50,
+      "top": 130,
+      "left": 470,
       "attrs": {
         "color": "green"
       }
@@ -129,11 +131,209 @@
     {
       "type": "wokwi-resistor",
       "id": "rl3",
-      "top": 500,
-      "left": 50,
+      "top": 215,
+      "left": 445,
       "attrs": {
         "value": "220"
+      },
+      "rotate": 90
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "door3",
+      "top": 480,
+      "left": 470,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rpu3",
+      "top": 560,
+      "left": 445,
+      "attrs": {
+        "value": "10000"
+      },
+      "rotate": 90
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led4",
+      "top": 130,
+      "left": 540,
+      "attrs": {
+        "color": "green"
       }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rl4",
+      "top": 215,
+      "left": 515,
+      "attrs": {
+        "value": "220"
+      },
+      "rotate": 90
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "door4",
+      "top": 480,
+      "left": 540,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rpu4",
+      "top": 560,
+      "left": 515,
+      "attrs": {
+        "value": "10000"
+      },
+      "rotate": 90
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led5",
+      "top": 130,
+      "left": 610,
+      "attrs": {
+        "color": "green"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rl5",
+      "top": 215,
+      "left": 585,
+      "attrs": {
+        "value": "220"
+      },
+      "rotate": 90
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "door5",
+      "top": 480,
+      "left": 610,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rpu5",
+      "top": 560,
+      "left": 585,
+      "attrs": {
+        "value": "10000"
+      },
+      "rotate": 90
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led6",
+      "top": 130,
+      "left": 680,
+      "attrs": {
+        "color": "green"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rl6",
+      "top": 215,
+      "left": 655,
+      "attrs": {
+        "value": "220"
+      },
+      "rotate": 90
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "door6",
+      "top": 480,
+      "left": 680,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rpu6",
+      "top": 560,
+      "left": 655,
+      "attrs": {
+        "value": "10000"
+      },
+      "rotate": 90
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led7",
+      "top": 130,
+      "left": 750,
+      "attrs": {
+        "color": "green"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rl7",
+      "top": 215,
+      "left": 725,
+      "attrs": {
+        "value": "220"
+      },
+      "rotate": 90
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "door7",
+      "top": 480,
+      "left": 750,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rpu7",
+      "top": 560,
+      "left": 725,
+      "attrs": {
+        "value": "10000"
+      },
+      "rotate": 90
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led8",
+      "top": 130,
+      "left": 820,
+      "attrs": {
+        "color": "green"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rl8",
+      "top": 215,
+      "left": 795,
+      "attrs": {
+        "value": "220"
+      },
+      "rotate": 90
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "door8",
+      "top": 480,
+      "left": 820,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rpu8",
+      "top": 560,
+      "left": 795,
+      "attrs": {
+        "value": "10000"
+      },
+      "rotate": 90
     }
   ],
   "connections": [
@@ -264,79 +464,85 @@
       []
     ],
     [
-      "door1:2",
-      "esp:D34",
-      "green",
-      []
-    ],
-    [
-      "door1:1",
-      "esp:GND.2",
-      "black",
-      []
-    ],
-    [
-      "rpu1:1",
+      "sr595:VCC",
       "esp:3V3",
       "red",
       []
     ],
     [
-      "rpu1:2",
-      "esp:D34",
-      "green",
-      []
-    ],
-    [
-      "door2:2",
-      "esp:VP",
-      "green",
-      []
-    ],
-    [
-      "door2:1",
-      "esp:GND.2",
-      "black",
-      []
-    ],
-    [
-      "rpu2:1",
+      "sr165:VCC",
       "esp:3V3",
       "red",
       []
     ],
     [
-      "rpu2:2",
-      "esp:VP",
-      "green",
+      "sr595:GND",
+      "esp:GND.1",
+      "black",
       []
     ],
     [
-      "door3:2",
-      "esp:VN",
-      "green",
-      []
-    ],
-    [
-      "door3:1",
+      "sr165:GND",
       "esp:GND.2",
       "black",
       []
     ],
     [
-      "rpu3:1",
+      "sr595:OE",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "sr595:MR",
       "esp:3V3",
       "red",
       []
     ],
     [
-      "rpu3:2",
-      "esp:VN",
-      "green",
+      "sr165:CE",
+      "esp:GND.2",
+      "black",
       []
     ],
     [
       "esp:D21",
+      "sr595:DS",
+      "green",
+      []
+    ],
+    [
+      "esp:D22",
+      "sr595:SHCP",
+      "green",
+      []
+    ],
+    [
+      "esp:D19",
+      "sr595:STCP",
+      "green",
+      []
+    ],
+    [
+      "esp:RX2",
+      "sr165:PL",
+      "orange",
+      []
+    ],
+    [
+      "esp:TX2",
+      "sr165:CP",
+      "orange",
+      []
+    ],
+    [
+      "esp:D34",
+      "sr165:Q7",
+      "orange",
+      []
+    ],
+    [
+      "sr595:Q0",
       "rl1:1",
       "green",
       []
@@ -354,7 +560,31 @@
       []
     ],
     [
-      "esp:D22",
+      "door1:2",
+      "sr165:D0",
+      "yellow",
+      []
+    ],
+    [
+      "door1:1",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "rpu1:1",
+      "esp:3V3",
+      "red",
+      []
+    ],
+    [
+      "rpu1:2",
+      "sr165:D0",
+      "yellow",
+      []
+    ],
+    [
+      "sr595:Q1",
       "rl2:1",
       "green",
       []
@@ -372,7 +602,31 @@
       []
     ],
     [
-      "esp:D19",
+      "door2:2",
+      "sr165:D1",
+      "yellow",
+      []
+    ],
+    [
+      "door2:1",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "rpu2:1",
+      "esp:3V3",
+      "red",
+      []
+    ],
+    [
+      "rpu2:2",
+      "sr165:D1",
+      "yellow",
+      []
+    ],
+    [
+      "sr595:Q2",
       "rl3:1",
       "green",
       []
@@ -387,6 +641,240 @@
       "led3:C",
       "esp:GND.1",
       "black",
+      []
+    ],
+    [
+      "door3:2",
+      "sr165:D2",
+      "yellow",
+      []
+    ],
+    [
+      "door3:1",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "rpu3:1",
+      "esp:3V3",
+      "red",
+      []
+    ],
+    [
+      "rpu3:2",
+      "sr165:D2",
+      "yellow",
+      []
+    ],
+    [
+      "sr595:Q3",
+      "rl4:1",
+      "green",
+      []
+    ],
+    [
+      "rl4:2",
+      "led4:A",
+      "green",
+      []
+    ],
+    [
+      "led4:C",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "door4:2",
+      "sr165:D3",
+      "yellow",
+      []
+    ],
+    [
+      "door4:1",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "rpu4:1",
+      "esp:3V3",
+      "red",
+      []
+    ],
+    [
+      "rpu4:2",
+      "sr165:D3",
+      "yellow",
+      []
+    ],
+    [
+      "sr595:Q4",
+      "rl5:1",
+      "green",
+      []
+    ],
+    [
+      "rl5:2",
+      "led5:A",
+      "green",
+      []
+    ],
+    [
+      "led5:C",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "door5:2",
+      "sr165:D4",
+      "yellow",
+      []
+    ],
+    [
+      "door5:1",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "rpu5:1",
+      "esp:3V3",
+      "red",
+      []
+    ],
+    [
+      "rpu5:2",
+      "sr165:D4",
+      "yellow",
+      []
+    ],
+    [
+      "sr595:Q5",
+      "rl6:1",
+      "green",
+      []
+    ],
+    [
+      "rl6:2",
+      "led6:A",
+      "green",
+      []
+    ],
+    [
+      "led6:C",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "door6:2",
+      "sr165:D5",
+      "yellow",
+      []
+    ],
+    [
+      "door6:1",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "rpu6:1",
+      "esp:3V3",
+      "red",
+      []
+    ],
+    [
+      "rpu6:2",
+      "sr165:D5",
+      "yellow",
+      []
+    ],
+    [
+      "sr595:Q6",
+      "rl7:1",
+      "green",
+      []
+    ],
+    [
+      "rl7:2",
+      "led7:A",
+      "green",
+      []
+    ],
+    [
+      "led7:C",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "door7:2",
+      "sr165:D6",
+      "yellow",
+      []
+    ],
+    [
+      "door7:1",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "rpu7:1",
+      "esp:3V3",
+      "red",
+      []
+    ],
+    [
+      "rpu7:2",
+      "sr165:D6",
+      "yellow",
+      []
+    ],
+    [
+      "sr595:Q7",
+      "rl8:1",
+      "green",
+      []
+    ],
+    [
+      "rl8:2",
+      "led8:A",
+      "green",
+      []
+    ],
+    [
+      "led8:C",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "door8:2",
+      "sr165:D7",
+      "yellow",
+      []
+    ],
+    [
+      "door8:1",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "rpu8:1",
+      "esp:3V3",
+      "red",
+      []
+    ],
+    [
+      "rpu8:2",
+      "sr165:D7",
+      "yellow",
       []
     ]
   ],

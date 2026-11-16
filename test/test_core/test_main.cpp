@@ -18,6 +18,7 @@
 #include "proto_codec.h"
 #include "ring_buffer.h"
 #include "sha256.h"
+#include "shift_io.h"
 #include "sync_manager.h"
 #include "vectors.h"
 
@@ -1005,6 +1006,66 @@ void test_ota_guard_healthy_firmware_cancels_the_trial() {
   for (int i = 0; i < 5; ++i) { OtaGuard g(&st); TEST_ASSERT_EQUAL(int(OtaGuard::Action::Normal), int(g.onBoot())); TEST_ASSERT_FALSE(g.pending()); }
 }
 
+
+// ===================================================================== 74HC595 / 74HC165 (bản Wokwi 8 ngăn)
+
+// Mô hình hai chip theo mô tả của Wokwi: 595 dịch ở cạnh lên SHCP, chốt ở cạnh lên STCP; 165 nạp khi PL thấp
+// (Q7 = D7), rồi mỗi cạnh lên CP (PL cao) dịch sang bit kế.
+struct FakeShiftChips : PinIo {
+  uint8_t sr = 0, q = 0, ds = 0;          // 595
+  bool shcp = false, stcp = false;
+  uint8_t inputs = 0xFF, latch = 0;       // 165: inputs bit k = mức chân Dk bên ngoài
+  bool pl = true, cp = false;
+  ShiftPins p;
+  explicit FakeShiftChips(const ShiftPins& pins) : p(pins) {}
+  void write(uint8_t pin, bool v) override {
+    if (pin == p.outData) ds = v;
+    else if (pin == p.outClock) { if (!shcp && v) sr = uint8_t((sr << 1) | ds); shcp = v; }
+    else if (pin == p.outLatch) { if (!stcp && v) q = sr; stcp = v; }
+    else if (pin == p.inLoad) { if (!v) latch = inputs; pl = v; }
+    else if (pin == p.inClock) { if (!cp && v && pl) latch = uint8_t(latch << 1); cp = v; }
+  }
+  bool read(uint8_t pin) override { return pin == p.inData ? ((latch >> 7) & 1) : false; }
+};
+
+static const ShiftPins SP = {21, 22, 19, 16, 17, 34};
+
+void test_shift_io_595_maps_bit_k_to_output_k_for_every_pattern() {
+  FakeShiftChips chips(SP);
+  ShiftIo io(chips, SP);
+  io.begin();
+  TEST_ASSERT_EQUAL_UINT8_MESSAGE(0, chips.q, "mọi khóa nhả sau begin()");
+  for (int v = 0; v < 256; ++v) {
+    io.writeOut(uint8_t(v));
+    TEST_ASSERT_EQUAL_UINT8(v, chips.q);                        // bit k -> Qk, đúng thứ tự
+  }
+  io.writeOut(1u << 2);                                         // chỉ ngăn 3
+  TEST_ASSERT_EQUAL_UINT8(0x04, chips.q);
+}
+
+void test_shift_io_165_returns_d0_as_bit0_for_every_pattern() {
+  FakeShiftChips chips(SP);
+  ShiftIo io(chips, SP);
+  io.begin();
+  for (int v = 0; v < 256; ++v) {
+    chips.inputs = uint8_t(v);
+    TEST_ASSERT_EQUAL_UINT8(v, io.readIn());
+  }
+  chips.inputs = 0xFF;                                          // mọi cửa mở (kéo lên)
+  chips.inputs &= uint8_t(~(1u << 4));                          // cửa 5 đóng (nối GND)
+  TEST_ASSERT_EQUAL_UINT8(0xEF, io.readIn());
+}
+
+void test_shift_io_read_does_not_disturb_the_outputs() {
+  FakeShiftChips chips(SP);
+  ShiftIo io(chips, SP);
+  io.begin();
+  io.writeOut(0xA5);
+  chips.inputs = 0x3C;
+  TEST_ASSERT_EQUAL_UINT8(0x3C, io.readIn());
+  TEST_ASSERT_EQUAL_UINT8(0xA5, chips.q);
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_sha256_nist_vectors);
@@ -1070,5 +1131,8 @@ int main() {
   RUN_TEST(test_door_closed_during_sleep_and_timer_wake_heartbeat);
   RUN_TEST(test_ota_guard_rolls_back_a_firmware_that_never_gets_healthy);
   RUN_TEST(test_ota_guard_healthy_firmware_cancels_the_trial);
+  RUN_TEST(test_shift_io_595_maps_bit_k_to_output_k_for_every_pattern);
+  RUN_TEST(test_shift_io_165_returns_d0_as_bit0_for_every_pattern);
+  RUN_TEST(test_shift_io_read_does_not_disturb_the_outputs);
   return UNITY_END();
 }

@@ -1,0 +1,396 @@
+{
+  "version": 1,
+  "author": "Khang",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "wokwi-esp32-devkit-v1",
+      "id": "esp",
+      "top": 0,
+      "left": 0,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-membrane-keypad",
+      "id": "keypad",
+      "top": -60,
+      "left": 330,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-ili9341",
+      "id": "tft",
+      "top": -90,
+      "left": 640,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "pot",
+      "top": 300,
+      "left": 350,
+      "attrs": {
+        "value": "670"
+      }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "door1",
+      "top": 420,
+      "left": 330,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rpu1",
+      "top": 500,
+      "left": 330,
+      "attrs": {
+        "value": "10000"
+      }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "door2",
+      "top": 420,
+      "left": 420,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rpu2",
+      "top": 500,
+      "left": 420,
+      "attrs": {
+        "value": "10000"
+      }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "door3",
+      "top": 420,
+      "left": 510,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rpu3",
+      "top": 500,
+      "left": 510,
+      "attrs": {
+        "value": "10000"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led1",
+      "top": 420,
+      "left": -130,
+      "attrs": {
+        "color": "green"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rl1",
+      "top": 500,
+      "left": -130,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led2",
+      "top": 420,
+      "left": -40,
+      "attrs": {
+        "color": "green"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rl2",
+      "top": 500,
+      "left": -40,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led3",
+      "top": 420,
+      "left": 50,
+      "attrs": {
+        "color": "green"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rl3",
+      "top": 500,
+      "left": 50,
+      "attrs": {
+        "value": "220"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "esp:TX0",
+      "$serialMonitor:RX",
+      "",
+      []
+    ],
+    [
+      "esp:RX0",
+      "$serialMonitor:TX",
+      "",
+      []
+    ],
+    [
+      "keypad:R1",
+      "esp:D13",
+      "blue",
+      []
+    ],
+    [
+      "keypad:R2",
+      "esp:D12",
+      "blue",
+      []
+    ],
+    [
+      "keypad:R3",
+      "esp:D14",
+      "blue",
+      []
+    ],
+    [
+      "keypad:R4",
+      "esp:D27",
+      "blue",
+      []
+    ],
+    [
+      "keypad:C1",
+      "esp:D26",
+      "orange",
+      []
+    ],
+    [
+      "keypad:C2",
+      "esp:D25",
+      "orange",
+      []
+    ],
+    [
+      "keypad:C3",
+      "esp:D33",
+      "orange",
+      []
+    ],
+    [
+      "keypad:C4",
+      "esp:D32",
+      "orange",
+      []
+    ],
+    [
+      "tft:MOSI",
+      "esp:D23",
+      "purple",
+      []
+    ],
+    [
+      "tft:SCK",
+      "esp:D18",
+      "purple",
+      []
+    ],
+    [
+      "tft:CS",
+      "esp:D5",
+      "purple",
+      []
+    ],
+    [
+      "tft:D/C",
+      "esp:D2",
+      "purple",
+      []
+    ],
+    [
+      "tft:RST",
+      "esp:D4",
+      "purple",
+      []
+    ],
+    [
+      "tft:LED",
+      "esp:D15",
+      "purple",
+      []
+    ],
+    [
+      "tft:VCC",
+      "esp:3V3",
+      "red",
+      []
+    ],
+    [
+      "tft:GND",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "pot:VCC",
+      "esp:3V3",
+      "red",
+      []
+    ],
+    [
+      "pot:GND",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "pot:SIG",
+      "esp:D35",
+      "yellow",
+      []
+    ],
+    [
+      "door1:2",
+      "esp:D34",
+      "green",
+      []
+    ],
+    [
+      "door1:1",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "rpu1:1",
+      "esp:3V3",
+      "red",
+      []
+    ],
+    [
+      "rpu1:2",
+      "esp:D34",
+      "green",
+      []
+    ],
+    [
+      "door2:2",
+      "esp:VP",
+      "green",
+      []
+    ],
+    [
+      "door2:1",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "rpu2:1",
+      "esp:3V3",
+      "red",
+      []
+    ],
+    [
+      "rpu2:2",
+      "esp:VP",
+      "green",
+      []
+    ],
+    [
+      "door3:2",
+      "esp:VN",
+      "green",
+      []
+    ],
+    [
+      "door3:1",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "rpu3:1",
+      "esp:3V3",
+      "red",
+      []
+    ],
+    [
+      "rpu3:2",
+      "esp:VN",
+      "green",
+      []
+    ],
+    [
+      "esp:D21",
+      "rl1:1",
+      "green",
+      []
+    ],
+    [
+      "rl1:2",
+      "led1:A",
+      "green",
+      []
+    ],
+    [
+      "led1:C",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "esp:D22",
+      "rl2:1",
+      "green",
+      []
+    ],
+    [
+      "rl2:2",
+      "led2:A",
+      "green",
+      []
+    ],
+    [
+      "led2:C",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "esp:D19",
+      "rl3:1",
+      "green",
+      []
+    ],
+    [
+      "rl3:2",
+      "led3:A",
+      "green",
+      []
+    ],
+    [
+      "led3:C",
+      "esp:GND.1",
+      "black",
+      []
+    ]
+  ],
+  "serialMonitor": {
+    "display": "always"
+  }
+}

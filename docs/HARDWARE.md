@@ -55,6 +55,14 @@ nối tiếp tiếp điểm reed của cả 8 ngăn (đóng khi mọi cửa đó
 | Đo điện áp pin | GPIO 35 (ADC1) | Cầu phân áp 100k/22k (`batteryDividerRatio`), lọc median rồi EMA |
 | 4G module | TX 17, RX 16, PWRKEY 19 | UART2, 115200 bps |
 
+### Bản mô phỏng Wokwi 8 ngăn (thay PCF8574)
+
+Wokwi không có PCF8574, nên `diagram.json` dùng **74HC595** (8 đầu ra: khóa/LED) và **74HC165** (8 đầu vào: cửa/công tắc), chỉ tốn
+6 chân: 595 DS=21, SHCP=22, STCP=19; 165 PL=16, CP=17, Q7=34. Logic ở `lib/edge_core/shift_io.h` (test trên máy với mô hình chip theo
+tài liệu Wokwi: `test_shift_io_*`), bật bằng `SECRET_SHIFT_IO 1`. Đây là chỗ thay thế riêng cho mô phỏng; tủ thật dùng PCF8574
+(`lockViaPcf8574`). Sơ đồ và tên chân chưa được chạy trong Wokwi: nếu có sự cố, quay về bản 3 ngăn
+`tools/diagram-3slot-direct-gpio.json` (chép đè `diagram.json`, đặt `SECRET_SHIFT_IO 0`, `SECRET_NUM_COMPARTMENTS 3`, `SECRET_COMP_SIZES "MMM"`).
+
 ## 3. Lọc nhiễu bằng thuật toán số (`lib/edge_core/filters.h`, tham số trong `FilterConfig`)
 
 | Tín hiệu | Thuật toán | Nơi dùng | Test |

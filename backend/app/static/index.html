@@ -7,117 +7,220 @@
 <style>
   :root {
     color-scheme: light;
-    --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
-    --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,.10); --wash: rgba(11,11,11,.05);
-    --series-1: #2a78d6; --series-2: #eb6834;
-    --critical: #d03b3b; --serious: #ec835a; --warning: #fab219; --good: #0ca30c;
+    --page: #efede6; --surface: #ffffff; --ink: #15181c; --ink-2: #474d54; --muted: #787f87;
+    --grid: #e6e3da; --axis: #c9c5b8; --border: #d8d4c7; --wash: rgba(21,24,28,.05);
+    --brand: #ffc20e; --brand-d: #d9a400; --link: #1a5fd0;
+    --series-1: #2457c5; --series-2: #f26b1d; --series-3: #1f9d55; --series-4: #0e8f9a;
+    --critical: #d6342c; --serious: #e8590c; --warning: #d99a00; --good: #1f9d55; --info: #2457c5;
+    --good-bg: #e3f4ea; --info-bg: #e4ecfb; --warn-bg: #fff1c9; --crit-bg: #fde6e4; --teal-bg: #dff3f4;
+    --s-bg: #dff3f4; --s-fg: #0b6f78; --m-bg: #e4ecfb; --m-fg: #1d4aa8; --l-bg: #ffe9a8; --l-fg: #7a4f00;
+    --door-a: #eceef1; --door-b: #d9dde2; --door-edge: #b4bbc4; --door-inset: #f8f9fa;
+    --head-font: "Bahnschrift", "DIN Alternate", "Roboto Condensed", "Arial Narrow", system-ui, sans-serif;
+    --mono: ui-monospace, "Cascadia Mono", "SF Mono", Consolas, monospace;
   }
   @media (prefers-color-scheme: dark) {
     :root:where(:not([data-theme="light"])) {
-      color-scheme: dark; --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7;
-      --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,.10); --wash: rgba(255,255,255,.06);
-      --series-1: #3987e5; --series-2: #d95926;
+      color-scheme: dark; --page: #111315; --surface: #1a1d21; --ink: #f1efe8; --ink-2: #c6c3b9; --muted: #8b9097;
+      --grid: #272b30; --axis: #3a4047; --border: #2e3338; --wash: rgba(255,255,255,.06); --link: #6ea2ff;
+      --series-1: #6b9bff; --series-2: #ff8a4a; --series-3: #3ddc84; --series-4: #3cc7d3;
+      --critical: #ff6b61; --serious: #ff8a4a; --warning: #ffc20e; --good: #3ddc84; --info: #6b9bff;
+      --good-bg: rgba(61,220,132,.13); --info-bg: rgba(107,155,255,.14); --warn-bg: rgba(255,194,14,.14); --crit-bg: rgba(255,107,97,.15); --teal-bg: rgba(60,199,211,.14);
+      --s-bg: rgba(60,199,211,.16); --s-fg: #7fe3ec; --m-bg: rgba(107,155,255,.18); --m-fg: #a9c4ff; --l-bg: rgba(255,194,14,.2); --l-fg: #ffd966;
+      --door-a: #30353b; --door-b: #272b30; --door-edge: #444b53; --door-inset: #3a4047;
     }
   }
   :root[data-theme="dark"] {
-    color-scheme: dark; --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7;
-    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,.10); --wash: rgba(255,255,255,.06);
-    --series-1: #3987e5; --series-2: #d95926;
+    color-scheme: dark; --page: #111315; --surface: #1a1d21; --ink: #f1efe8; --ink-2: #c6c3b9; --muted: #8b9097;
+    --grid: #272b30; --axis: #3a4047; --border: #2e3338; --wash: rgba(255,255,255,.06); --link: #6ea2ff;
+    --series-1: #6b9bff; --series-2: #ff8a4a; --series-3: #3ddc84; --series-4: #3cc7d3;
+    --critical: #ff6b61; --serious: #ff8a4a; --warning: #ffc20e; --good: #3ddc84; --info: #6b9bff;
+    --good-bg: rgba(61,220,132,.13); --info-bg: rgba(107,155,255,.14); --warn-bg: rgba(255,194,14,.14); --crit-bg: rgba(255,107,97,.15); --teal-bg: rgba(60,199,211,.14);
+    --s-bg: rgba(60,199,211,.16); --s-fg: #7fe3ec; --m-bg: rgba(107,155,255,.18); --m-fg: #a9c4ff; --l-bg: rgba(255,194,14,.2); --l-fg: #ffd966;
+    --door-a: #30353b; --door-b: #272b30; --door-edge: #444b53; --door-inset: #3a4047;
   }
   * { box-sizing: border-box; }
-  [hidden] { display: none !important; }   /* các lớp có display riêng (.actions, .form...) không được đè thuộc tính hidden */
+  [hidden] { display: none !important; }   /* các lớp có display riêng không được đè thuộc tính hidden */
   html { background: var(--page); }
-  body { margin: 0; background: var(--page); color: var(--ink); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
-  .wrap { max-width: 1200px; margin: 0 auto; padding: 24px 16px 48px; }
-  header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
-  h1 { font-size: 20px; font-weight: 600; margin: 0; }
-  .who { color: var(--ink-2); font-size: 12px; display: flex; gap: 12px; align-items: center; }
-  .status { color: var(--muted); font-size: 12px; }
-  .status.error { color: var(--critical); }
-  button, select, input { font: inherit; color: var(--ink); }
-  .btn, select, input { border: 1px solid var(--border); border-radius: 8px; background: var(--surface); padding: 7px 10px; }
-  .btn { cursor: pointer; } .btn:hover { background: var(--wash); }
-  .btn.danger { border-color: var(--critical); }
-  button:focus-visible, select:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px; }
-  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--surface); }
-  .seg button { border: 0; background: transparent; color: var(--ink-2); padding: 7px 12px; cursor: pointer; }
-  .seg button + button { border-left: 1px solid var(--border); }
-  .seg button[aria-pressed="true"] { color: var(--ink); font-weight: 600; background: var(--wash); }
-  .filters { display: flex; gap: 12px; align-items: center; margin: 16px 0 20px; flex-wrap: wrap; }
+  body { margin: 0; color: var(--ink); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 16px 16px 48px; }
 
-  .card, .tile { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; min-width: 0; transition: opacity .15s; }
-  main.loading .card, main.loading .tile { opacity: .6; }
-  .card h2 { font-size: 14px; font-weight: 600; margin: 0; }
-  .sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  /* thanh tiêu đề: đen, điểm nhấn vàng tín hiệu như biển hiệu tủ khóa */
+  .hero { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 18px; border-radius: 8px; background: #15181c; color: #f4f1e8; border-bottom: 4px solid var(--brand); }
+  .hero h1 { margin: 0; display: flex; align-items: center; gap: 12px; font-weight: 400; }
+  .brand-name { font: 700 19px/1 var(--head-font); letter-spacing: .14em; }
+  .brand-sub { font-size: 12px; color: #aeb4bb; border-left: 1px solid #3a4047; padding-left: 12px; letter-spacing: .02em; }
+  .logo { width: 34px; height: 34px; border-radius: 6px; background: var(--brand); color: #15181c; display: inline-grid; place-items: center; flex: none; }
+  .logo svg { width: 21px; height: 21px; }
+  .who { color: #c9ced4; font-size: 12px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; font-family: var(--mono); }
+  .who .role { background: var(--brand); color: #15181c; border-radius: 3px; padding: 1px 8px; font: 700 11px/18px var(--head-font); letter-spacing: .08em; }
+  .status { color: #aeb4bb; font-size: 12px; display: inline-flex; align-items: center; gap: 6px; }
+  .status.error { color: #ff9b94; font-weight: 600; }
+  .hero .btn { background: transparent; border-color: #4a5159; color: #f4f1e8; } .hero .btn:hover { background: #262b31; }
+
+  button, select, input { font: inherit; color: var(--ink); }
+  .btn, select, input { border: 1px solid var(--border); border-radius: 6px; background: var(--surface); padding: 8px 12px; }
+  .btn { cursor: pointer; transition: background .12s, transform .05s; } .btn:hover { background: var(--wash); } .btn:active { transform: translateY(1px); }
+  .btn.primary { background: var(--brand); color: #15181c; border-color: var(--brand-d); font-weight: 700; letter-spacing: .02em; }
+  .btn.primary:hover { background: #ffd23d; }
+  .btn.danger { border-color: color-mix(in srgb, var(--critical) 60%, transparent); color: var(--critical); background: transparent; font-weight: 600; }
+  .btn.danger:hover { background: var(--crit-bg); }
+  .btn.ghost { border-color: transparent; background: transparent; color: var(--ink-2); }
+  button:focus-visible, select:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  :root[data-theme="dark"] button:focus-visible, :root[data-theme="dark"] input:focus-visible, :root[data-theme="dark"] select:focus-visible { outline-color: var(--brand); }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) button:focus-visible, :root:not([data-theme="light"]) input:focus-visible, :root:not([data-theme="light"]) select:focus-visible { outline-color: var(--brand); } }
+  input:focus, select:focus { border-color: var(--ink); }
+  .seg { display: inline-flex; border: 1px solid var(--ink); border-radius: 6px; overflow: hidden; background: var(--surface); }
+  .seg button { border: 0; background: transparent; color: var(--ink); padding: 7px 14px; cursor: pointer; font-weight: 600; }
+  .seg button + button { border-left: 1px solid var(--border); }
+  .seg button[aria-pressed="true"] { background: #15181c; color: var(--brand); }
+  .filters { display: flex; gap: 12px; align-items: center; margin: 14px 0; flex-wrap: wrap; }
+
+  .card, .tile { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; min-width: 0; transition: opacity .15s; }
+  main.loading .card, main.loading .tile { opacity: .65; }
+  .card h2 { font: 700 12px/1 var(--head-font); letter-spacing: .12em; text-transform: uppercase; margin: 0; display: flex; align-items: center; gap: 8px; }
+  .card h2::before { content: ""; width: 10px; height: 10px; background: var(--brand); border: 2px solid #15181c; border-radius: 2px; flex: none; }
+  :root[data-theme="dark"] .card h2::before { border-color: var(--surface); }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .card h2::before { border-color: var(--surface); } }
+  .sub { color: var(--muted); font-size: 12px; margin-top: 4px; }
   .head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; margin-bottom: 12px; flex-wrap: wrap; }
   .tools { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+
+  /* ô KPI: nhãn kiểu tem, số lớn dạng đồng hồ */
   .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 12px; }
-  .tile { padding: 14px 16px; } .tile .label { color: var(--ink-2); font-size: 12px; }
-  .tile .value { font-size: 28px; font-weight: 600; line-height: 1.2; margin-top: 4px; } .tile .note { color: var(--muted); font-size: 12px; }
+  .tile { padding: 12px 16px 14px; display: grid; grid-template-columns: 1fr auto; gap: 0 10px; align-items: start; border-top: 3px solid var(--accent); }
+  .tile .label { color: var(--ink-2); font: 700 11px/1.2 var(--head-font); letter-spacing: .12em; text-transform: uppercase; display: flex; align-items: center; gap: 7px; grid-column: 1 / 3; }
+  .tile .label::before { content: ""; width: 8px; height: 8px; background: var(--accent); border-radius: 50%; }
+  .tile .value { font: 700 36px/1.1 var(--head-font); margin-top: 8px; grid-column: 1; font-variant-numeric: tabular-nums; }
+  .tile .note { color: var(--muted); font-size: 12px; grid-column: 1 / 3; margin-top: 2px; }
+  .tile .ico { grid-column: 2; grid-row: 2; margin-top: 10px; font-size: 22px; color: var(--accent); opacity: .9; }
+  .tile.k-online { --accent: var(--good); } .tile.k-fill { --accent: var(--info); }
+  .tile.k-wait { --accent: var(--brand-d); } .tile.k-alerts { --accent: var(--critical); }
+  .tile .bar { grid-column: 1 / 3; height: 6px; border-radius: 1px; background: var(--grid); overflow: hidden; margin-top: 8px; }
+  .tile .bar i { display: block; height: 100%; width: 0; background: repeating-linear-gradient(90deg, var(--info) 0 6px, transparent 6px 8px); transition: width .4s; }
+
   .row2 { display: grid; grid-template-columns: 2fr 3fr; gap: 12px; margin-bottom: 12px; }
   .row3 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
 
   .lockers { display: grid; gap: 8px; }
-  .locker { display: grid; grid-template-columns: auto 1fr auto; gap: 2px 10px; padding: 10px; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; background: transparent; text-align: left; width: 100%; }
-  .locker[aria-pressed="true"] { background: var(--wash); border-color: var(--ink-2); }
-  .locker .name { font-weight: 600; } .locker .meta { color: var(--muted); font-size: 12px; grid-column: 2 / 4; }
-  .state { display: inline-flex; gap: 6px; align-items: center; font-size: 12px; white-space: nowrap; }
+  .locker { display: grid; grid-template-columns: auto 1fr auto; gap: 2px 10px; padding: 10px 12px; border: 1px solid var(--border); border-left: 6px solid var(--st, var(--muted)); border-radius: 6px; cursor: pointer; background: var(--surface); text-align: left; width: 100%; }
+  .locker:hover { background: color-mix(in srgb, var(--st, var(--muted)) 9%, var(--surface)); }
+  .locker[aria-pressed="true"] { background: color-mix(in srgb, var(--st, var(--muted)) 11%, var(--surface)); box-shadow: inset 0 0 0 1px var(--ink); }
+  .locker .name { font: 700 15px/1.3 var(--head-font); letter-spacing: .03em; } .locker .meta { color: var(--muted); font-size: 12px; grid-column: 2 / 4; }
+  .state { display: inline-flex; gap: 6px; align-items: center; font: 700 11px/1 var(--head-font); letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; color: var(--st, var(--ink-2)); }
   .state i { font-style: normal; }
-  .map { margin-bottom: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--page); overflow: hidden; }
-  .map svg { display: block; width: 100%; height: auto; } .map text { font: 11px system-ui, -apple-system, "Segoe UI", sans-serif; fill: var(--ink-2); }
-  .map .pin { cursor: pointer; } .map .pin:focus-visible { outline: none; } .map .pin:focus-visible .halo { stroke: var(--series-1); stroke-width: 2; }
-  .map .legend { padding: 6px 10px; border-top: 1px solid var(--border); flex-wrap: wrap; }
-  .comps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-  .comp { border: 1px solid var(--border); border-radius: 8px; padding: 8px; min-height: 92px; display: flex; flex-direction: column; gap: 2px; }
-  .comp .no { font-weight: 600; } .comp .st { font-size: 12px; color: var(--ink-2); } .comp .pid { font-size: 11px; color: var(--muted); word-break: break-all; }
-  .comp .dwell { font-size: 11px; color: var(--ink-2); }
-  .comp.occupied { background: color-mix(in srgb, var(--series-1) 14%, var(--surface)); }
-  .comp.open { border: 2px solid var(--critical); }
-  .comp.fault { background: repeating-linear-gradient(45deg, var(--wash), var(--wash) 4px, transparent 4px, transparent 8px); }
-  .comp .btn { margin-top: auto; padding: 3px 8px; font-size: 12px; }
+  .st-online { --st: var(--good); } .st-offline { --st: var(--muted); } .st-sleep { --st: var(--warning); } .st-alert { --st: var(--critical); }
+  .map { margin-bottom: 12px; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; background: var(--surface);
+    background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px); background-size: 28px 28px; }
+  .map svg { display: block; width: 100%; height: auto; } .map text { font: 600 11px var(--head-font); letter-spacing: .04em; fill: var(--ink); paint-order: stroke; stroke: var(--surface); stroke-width: 3px; }
+  .map .pin { cursor: pointer; } .map .pin:focus-visible { outline: none; } .map .pin:focus-visible .halo { stroke: var(--ink); stroke-width: 2; }
+  .map .legend { padding: 6px 10px; border-top: 1px solid var(--border); flex-wrap: wrap; background: var(--surface); }
+
+  /* mỗi ngăn vẽ như một cánh cửa tủ khóa: tấm số, khe thông gió, tay nắm, đèn LED trạng thái */
+  .comps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 10px; border-radius: 8px; background: #2a2f35; border: 1px solid #1b1e22; }
+  .comp { --led: var(--good); position: relative; display: flex; flex-direction: column; gap: 3px; min-height: 118px; padding: 10px 10px 8px; border-radius: 4px;
+    background: linear-gradient(180deg, var(--door-a), var(--door-b)); border: 1px solid var(--door-edge); box-shadow: inset 0 0 0 3px var(--door-inset); color: var(--ink); }
+  .comp::before { content: ""; position: absolute; left: 12px; right: 36px; top: 7px; height: 4px; opacity: .55; background: repeating-linear-gradient(90deg, var(--door-edge) 0 3px, transparent 3px 7px); }
+  .comp::after { content: ""; position: absolute; right: 9px; top: 50%; width: 5px; height: 26px; margin-top: -13px; border-radius: 3px; background: var(--door-edge); }   /* tay nắm */
+  .comp .led { position: absolute; right: 10px; top: 8px; width: 10px; height: 10px; border-radius: 50%; background: var(--led); box-shadow: 0 0 0 2px var(--door-inset), 0 0 8px var(--led); }
+  .comp .no { display: flex; align-items: center; gap: 6px; margin-top: 8px; font: 700 13px/1 var(--mono); }
+  .comp .plate { background: #15181c; color: var(--brand); border-radius: 3px; padding: 3px 7px; letter-spacing: .08em; }
+  .comp .st { font: 700 11px/1.2 var(--head-font); letter-spacing: .08em; text-transform: uppercase; color: var(--ink); margin-top: 4px; }
+  .comp .pid { font: 600 11px var(--mono); color: var(--ink-2); word-break: break-all; padding-right: 12px; }
+  .comp .dwell { font-size: 11px; color: var(--ink-2); padding-right: 12px; }
+  .comp.occupied { --led: var(--info); }
+  .comp.occupied .pid { background: var(--wash); border-radius: 2px; padding: 1px 4px; align-self: flex-start; }
+  .comp.open { --led: var(--critical); border-color: var(--critical); transform-origin: left center; transform: perspective(600px) rotateY(-16deg); box-shadow: inset 0 0 0 3px var(--crit-bg), -6px 0 0 #0e1013; animation: ajar 1.4s ease-in-out infinite; }
+  .comp.fault { --led: var(--warning); background: repeating-linear-gradient(45deg, var(--door-a), var(--door-a) 6px, var(--warn-bg) 6px, var(--warn-bg) 12px); }
+  @keyframes ajar { 50% { box-shadow: inset 0 0 0 3px var(--crit-bg), -6px 0 0 #0e1013, 0 0 0 3px color-mix(in srgb, var(--critical) 35%, transparent); } }
+  @media (prefers-reduced-motion: reduce) { .comp.open { animation: none; } }
+  .comp .btn { margin-top: auto; padding: 3px 8px; font-size: 11px; background: var(--surface); }
+  .chip { display: inline-block; font: 700 10px/16px var(--head-font); letter-spacing: .06em; padding: 0 6px; border-radius: 3px; }
+  .chip.S { background: var(--s-bg); color: var(--s-fg); } .chip.M { background: var(--m-bg); color: var(--m-fg); } .chip.L { background: var(--l-bg); color: var(--l-fg); }
+
   .legend { display: flex; gap: 16px; font-size: 12px; color: var(--ink-2); }
-  .legend span { display: inline-flex; gap: 6px; align-items: center; } .sw { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+  .legend span { display: inline-flex; gap: 6px; align-items: center; } .sw { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
   .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
   .chart text { font: 11px system-ui, -apple-system, "Segoe UI", sans-serif; fill: var(--muted); }
-  .chart .peak { fill: var(--ink-2); font-weight: 600; }
+  .chart .peak { fill: var(--ink); font-weight: 700; }
   .empty { color: var(--muted); padding: 28px 0; text-align: center; }
   table { width: 100%; border-collapse: collapse; }
-  th { text-align: left; color: var(--ink-2); font-weight: 500; font-size: 12px; padding: 6px 8px; border-bottom: 1px solid var(--axis); white-space: nowrap; }
+  th { text-align: left; color: var(--ink-2); font: 700 11px/1.2 var(--head-font); letter-spacing: .1em; text-transform: uppercase; padding: 7px 8px; border-bottom: 2px solid var(--ink); white-space: nowrap; position: sticky; top: 0; background: var(--surface); }
   td { padding: 7px 8px; border-bottom: 1px solid var(--grid); vertical-align: top; } td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tbody tr:hover td { background: var(--wash); }
   td.time { white-space: nowrap; color: var(--ink-2); font-variant-numeric: tabular-nums; }
   .scroll { overflow-x: auto; }
-  .alert { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 12px; padding: 10px 0; border-bottom: 1px solid var(--grid); }
-  .alert:last-child { border-bottom: 0; } .alert.acked { opacity: .55; }
-  .sev { display: inline-flex; gap: 6px; font-size: 12px; font-weight: 600; white-space: nowrap; } .sev i { font-style: normal; }
-  .alert .msg { grid-column: 2 / 4; color: var(--ink-2); } .alert .when { color: var(--muted); font-size: 12px; grid-column: 2 / 4; }
+  /* nhãn kiểu tem vận đơn */
+  .badge { display: inline-flex; gap: 4px; align-items: center; font: 700 10.5px/17px var(--head-font); letter-spacing: .07em; text-transform: uppercase; border-radius: 3px; padding: 0 7px; white-space: nowrap; background: var(--wash); color: var(--ink-2); border: 1px solid transparent; }
+  .b-blue { background: var(--info-bg); color: var(--info); border-color: color-mix(in srgb, var(--info) 30%, transparent); } .b-green { background: var(--good-bg); color: var(--good); border-color: color-mix(in srgb, var(--good) 30%, transparent); }
+  .b-red { background: var(--crit-bg); color: var(--critical); border-color: color-mix(in srgb, var(--critical) 30%, transparent); } .b-amber { background: var(--warn-bg); color: #8a5a00; border-color: color-mix(in srgb, var(--warning) 45%, transparent); }
+  :root[data-theme="dark"] .b-amber { color: var(--brand); } @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .b-amber { color: var(--brand); } }
+  .b-violet { background: var(--teal-bg); color: var(--series-4); border-color: color-mix(in srgb, var(--series-4) 30%, transparent); } .b-gray { background: var(--wash); color: var(--muted); }
+  .alert { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 12px; padding: 10px 12px; margin-bottom: 8px; border-radius: 6px; border: 1px solid var(--border); border-left: 6px solid var(--sev, var(--muted)); background: color-mix(in srgb, var(--sev, var(--muted)) 7%, var(--surface)); }
+  .alert.sev-high { --sev: var(--critical); } .alert.sev-medium { --sev: var(--serious); } .alert.sev-low { --sev: var(--warning); }
+  .alert:last-child { margin-bottom: 0; } .alert.acked { opacity: .55; }
+  .sev { display: inline-flex; gap: 6px; font: 700 11px/1.4 var(--head-font); letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; color: var(--sev); } .sev i { font-style: normal; }
+  .alert .msg { grid-column: 2 / 4; color: var(--ink-2); } .alert .when { color: var(--muted); font-size: 12px; grid-column: 2 / 4; font-family: var(--mono); }
   .list { max-height: 380px; overflow-y: auto; }
   .form { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; } .form .wide { grid-column: 1 / 3; }
-  .kv { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; } .kv dt { color: var(--ink-2); } .kv dd { margin: 0; }
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; } .kv dt { color: var(--ink-2); } .kv dd { margin: 0; font-weight: 500; } .kv a { color: var(--link); }
   .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
-  .badge { display: inline-flex; gap: 4px; align-items: center; font-size: 12px; border: 1px solid var(--border); border-radius: 999px; padding: 1px 8px; }
-  .tip { position: fixed; z-index: 10; pointer-events: none; display: none; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; box-shadow: 0 4px 16px rgba(0,0,0,.15); font-size: 12px; min-width: 170px; }
+  .tip { position: fixed; z-index: 10; pointer-events: none; display: none; background: var(--surface); border: 1px solid var(--ink); border-radius: 4px; padding: 8px 10px; font-size: 12px; min-width: 170px; }
   .tip .r { display: flex; gap: 8px; align-items: center; } .tip .k { width: 10px; height: 3px; border-radius: 2px; } .tip .v { font-weight: 600; margin-left: auto; padding-left: 12px; }
-  .toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--page); padding: 10px 16px; border-radius: 8px; z-index: 20; max-width: 90vw; }
-  #login { max-width: 360px; margin: 14vh auto; } #login form { display: grid; gap: 10px; } #login .err { color: var(--critical); min-height: 1.4em; }
-  @media (max-width: 900px) { .kpis { grid-template-columns: repeat(2, 1fr); } .row2, .row3 { grid-template-columns: 1fr; } }
+  .toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: #15181c; color: var(--brand); border-left: 5px solid var(--brand); padding: 10px 18px; border-radius: 4px; z-index: 20; max-width: 90vw; font-weight: 600; }
+
+  /* ===== đăng nhập: bức tường tủ khóa + biểu mẫu ===== */
+  #login { min-height: 100vh; display: grid; grid-template-columns: 1.15fr 1fr; }
+  .login-art { background: #15181c; color: #f4f1e8; padding: 36px 44px; display: flex; flex-direction: column; justify-content: space-between; gap: 24px; position: relative; overflow: hidden;
+    background-image: radial-gradient(600px 300px at 15% 0%, rgba(255,194,14,.10), transparent), linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px); background-size: auto, 32px 32px, 32px 32px; }
+  .art-top { display: flex; align-items: center; gap: 12px; }
+  .wall { width: 100%; max-width: 520px; height: auto; align-self: center; filter: drop-shadow(0 18px 30px rgba(0,0,0,.45)); }
+  .led-blink { animation: blink 2.2s ease-in-out infinite; } .led-blink.b2 { animation-delay: .7s; } .led-blink.b3 { animation-delay: 1.3s; }
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+  @media (prefers-reduced-motion: reduce) { .led-blink { animation: none; } }
+  .art-copy h2 { margin: 0 0 10px; font: 700 clamp(30px, 4vw, 46px)/1.02 var(--head-font); letter-spacing: .02em; text-transform: uppercase; }
+  .art-copy h2 em { font-style: normal; color: var(--brand); }
+  .art-copy p { margin: 0; color: #aeb4bb; max-width: 40ch; }
+  .login-panel { display: grid; place-items: center; padding: 32px 24px; background: var(--page); }
+  .login-panel form { width: 100%; max-width: 360px; display: grid; gap: 14px; }
+  .login-panel h1 { margin: 0; font: 700 30px/1.1 var(--head-font); letter-spacing: .02em; text-transform: uppercase; }
+  .login-panel h1::after { content: ""; display: block; width: 44px; height: 5px; background: var(--brand); margin-top: 10px; border-radius: 1px; }
+  .login-panel label { display: grid; gap: 6px; font: 700 11px/1 var(--head-font); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); }
+  .login-panel input { font: 500 15px system-ui, sans-serif; letter-spacing: normal; text-transform: none; padding: 11px 12px; border-radius: 6px; border: 1.5px solid var(--axis); background: var(--surface); }
+  .login-panel input:focus { border-color: var(--ink); box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 55%, transparent); outline: none; }
+  .pw { display: grid; grid-template-columns: 1fr auto; gap: 6px; } .pw .btn { padding: 0 12px; font-size: 12px; font-weight: 600; border: 1.5px solid var(--axis); background: var(--surface); color: var(--ink-2); }
+  .login-panel .btn.primary { padding: 12px; font-size: 15px; display: flex; justify-content: center; gap: 8px; align-items: center; }
+  .login-panel .err { color: var(--critical); min-height: 1.4em; font-weight: 600; }
+  .roles { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; color: var(--muted); font-size: 12px; }
+  @media (max-width: 900px) { #login { grid-template-columns: 1fr; } .login-art { padding: 22px 20px; } .wall { max-width: 300px; } .art-copy h2 { font-size: 28px; } .login-panel { padding: 24px 16px 40px; }
+    .kpis { grid-template-columns: repeat(2, 1fr); } .row2, .row3 { grid-template-columns: 1fr; } .comps { grid-template-columns: repeat(3, 1fr); } .brand-sub { display: none; } }
 </style>
 </head>
 <body>
-<section id="login" class="card" hidden>
-  <h1>Smart Locker</h1>
-  <p class="sub">Đăng nhập: vận hành xem trung tâm giám sát; shipper tạo đơn; người nhận xem đơn và lấy hàng.</p>
-  <form id="login-form">
-    <input id="phone" autocomplete="username" placeholder="Số điện thoại" required>
-    <input id="password" type="password" autocomplete="current-password" placeholder="Mật khẩu" required>
-    <button class="btn" type="submit">Đăng nhập</button>
-    <div class="err" id="login-error" role="alert"></div>
-  </form>
+<section id="login" hidden>
+  <div class="login-art">
+    <div class="art-top"><span class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="8" height="18" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/><path d="M8.5 10.5v3"/></svg></span><span class="brand-name">SMART LOCKER</span></div>
+    <svg class="wall" viewBox="0 0 352 250" role="img" aria-label="Minh họa tủ khóa giao hàng 8 ngăn"><rect x="0" y="0" width="352" height="250" rx="8" fill="#2a2f35" stroke="#1b1e22" stroke-width="2"/><g><rect x="12" y="12" width="104" height="70" rx="3" fill="#3a4048" stroke="#59616b"/><rect x="15" y="15" width="98" height="64" rx="2" fill="none" stroke="#4b535c"/><path d="M22 21h64" stroke="#59616b" stroke-width="3" stroke-dasharray="3 4"/><rect x="22" y="58" width="26" height="14" rx="2" fill="#15181c"/><text x="35" y="68" text-anchor="middle" fill="#ffc20e" font-family="ui-monospace,Consolas,monospace" font-size="9" font-weight="700">01</text><rect x="104" y="35.0" width="4" height="24" rx="2" fill="#6a727c"/><circle class="" cx="104" cy="23" r="4" fill="#3ddc84"/></g><g><rect x="12" y="90" width="104" height="70" rx="3" fill="#3a4048" stroke="#59616b"/><rect x="15" y="93" width="98" height="64" rx="2" fill="none" stroke="#4b535c"/><path d="M22 99h64" stroke="#59616b" stroke-width="3" stroke-dasharray="3 4"/><rect x="22" y="136" width="26" height="14" rx="2" fill="#15181c"/><text x="35" y="146" text-anchor="middle" fill="#ffc20e" font-family="ui-monospace,Consolas,monospace" font-size="9" font-weight="700">02</text><rect x="104" y="113.0" width="4" height="24" rx="2" fill="#6a727c"/><circle class="" cx="104" cy="101" r="4" fill="#3ddc84"/></g><g><rect x="12" y="168" width="104" height="70" rx="3" fill="#3a4048" stroke="#59616b"/><rect x="15" y="171" width="98" height="64" rx="2" fill="none" stroke="#4b535c"/><path d="M22 177h64" stroke="#59616b" stroke-width="3" stroke-dasharray="3 4"/><rect x="22" y="214" width="26" height="14" rx="2" fill="#15181c"/><text x="35" y="224" text-anchor="middle" fill="#ffc20e" font-family="ui-monospace,Consolas,monospace" font-size="9" font-weight="700">03</text><rect x="104" y="191.0" width="4" height="24" rx="2" fill="#6a727c"/><circle class="led-blink" cx="104" cy="179" r="4" fill="#ffc20e"/></g><g><rect x="124" y="12" width="104" height="70" rx="3" fill="#3a4048" stroke="#59616b"/><rect x="127" y="15" width="98" height="64" rx="2" fill="none" stroke="#4b535c"/><path d="M134 21h64" stroke="#59616b" stroke-width="3" stroke-dasharray="3 4"/><rect x="134" y="58" width="26" height="14" rx="2" fill="#15181c"/><text x="147" y="68" text-anchor="middle" fill="#ffc20e" font-family="ui-monospace,Consolas,monospace" font-size="9" font-weight="700">04</text><rect x="216" y="35.0" width="4" height="24" rx="2" fill="#6a727c"/><circle class="" cx="216" cy="23" r="4" fill="#3ddc84"/></g><g><rect x="124" y="90" width="104" height="70" rx="3" fill="#3a4048" stroke="#59616b"/><rect x="127" y="93" width="98" height="64" rx="2" fill="none" stroke="#4b535c"/><path d="M134 99h64" stroke="#59616b" stroke-width="3" stroke-dasharray="3 4"/><rect x="134" y="136" width="26" height="14" rx="2" fill="#15181c"/><text x="147" y="146" text-anchor="middle" fill="#ffc20e" font-family="ui-monospace,Consolas,monospace" font-size="9" font-weight="700">05</text><rect x="216" y="113.0" width="4" height="24" rx="2" fill="#6a727c"/><circle class="led-blink b2" cx="216" cy="101" r="4" fill="#5aa2ff"/></g><g><rect x="124" y="168" width="104" height="70" rx="3" fill="#3a4048" stroke="#59616b"/><rect x="127" y="171" width="98" height="64" rx="2" fill="none" stroke="#4b535c"/><path d="M134 177h64" stroke="#59616b" stroke-width="3" stroke-dasharray="3 4"/><rect x="134" y="214" width="26" height="14" rx="2" fill="#15181c"/><text x="147" y="224" text-anchor="middle" fill="#ffc20e" font-family="ui-monospace,Consolas,monospace" font-size="9" font-weight="700">06</text><rect x="216" y="191.0" width="4" height="24" rx="2" fill="#6a727c"/><circle class="" cx="216" cy="179" r="4" fill="#3ddc84"/></g><g><rect x="236" y="12" width="104" height="109" rx="3" fill="#0e1013" stroke="#59616b"/><rect x="298.4" y="69" width="31.2" height="40" rx="2" fill="#c9a468" stroke="#a07d44"/><path d="M314.0 69v40" stroke="#e7d2a6" stroke-width="4"/><polygon points="236,12 288.0,21 288.0,112 236,121" fill="#444b54" stroke="#6a727c"/><rect x="244" y="95" width="26" height="14" rx="2" fill="#15181c"/><text x="257" y="105" text-anchor="middle" fill="#ffc20e" font-family="ui-monospace,Consolas,monospace" font-size="9" font-weight="700">07</text><circle class="led-blink b3" cx="328" cy="23" r="4" fill="#ff5a4f"/></g><g><rect x="236" y="129" width="104" height="109" rx="3" fill="#3a4048" stroke="#59616b"/><rect x="239" y="132" width="98" height="103" rx="2" fill="none" stroke="#4b535c"/><path d="M246 138h64" stroke="#59616b" stroke-width="3" stroke-dasharray="3 4"/><rect x="246" y="214" width="26" height="14" rx="2" fill="#15181c"/><text x="259" y="224" text-anchor="middle" fill="#ffc20e" font-family="ui-monospace,Consolas,monospace" font-size="9" font-weight="700">08</text><rect x="328" y="171.5" width="4" height="24" rx="2" fill="#6a727c"/><circle class="" cx="328" cy="140" r="4" fill="#5aa2ff"/></g></svg>
+    <div class="art-copy">
+      <h2>Gửi hàng.<br>Nhận mã.<br><em>Mở tủ.</em></h2>
+      <p>Tủ khóa giao hàng thông minh. Mất mạng vẫn gửi và lấy hàng được, có mạng lại thì đồng bộ đủ, không trùng.</p>
+    </div>
+  </div>
+  <div class="login-panel">
+    <form id="login-form">
+      <h1>Đăng nhập</h1>
+      <label>Số điện thoại<input id="phone" autocomplete="username" inputmode="tel" placeholder="09xx xxx xxx" required></label>
+      <label>Mật khẩu<span class="pw"><input id="password" type="password" autocomplete="current-password" placeholder="••••••••" required><button class="btn" type="button" id="pw-toggle" aria-pressed="false">Hiện</button></span></label>
+      <button class="btn primary" type="submit">Đăng nhập <span aria-hidden="true">→</span></button>
+      <div class="err" id="login-error" role="alert"></div>
+      <div class="roles">Dành cho <span class="badge b-violet">Vận hành</span><span class="badge b-blue">Shipper</span><span class="badge b-green">Người nhận</span></div>
+    </form>
+  </div>
 </section>
 
 <!-- ===== Giao diện shipper / người nhận (không có quyền xem dashboard vận hành) ===== -->
 <div class="wrap" id="my" hidden>
-  <header>
-    <h1>Smart Locker · Đơn của tôi</h1>
+  <header class="hero">
+    <h1><span class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="8" height="18" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/><path d="M8.5 10.5v3"/></svg></span><span class="brand-name">SMART LOCKER</span><span class="brand-sub">Đơn của tôi</span></h1>
     <div class="who"><span id="my-who"></span><button class="btn" id="my-logout">Đăng xuất</button></div>
   </header>
   <div class="filters"></div>
@@ -129,7 +232,7 @@
         <input id="mn-phone" placeholder="SĐT người nhận" required>
         <select id="mn-size"><option value="S">Nhỏ (S)</option><option value="M" selected>Vừa (M)</option><option value="L">Lớn (L)</option></select>
         <select id="mn-locker" aria-label="Tủ"></select>
-        <button class="btn wide" type="submit">Tạo đơn</button>
+        <button class="btn primary wide" type="submit">Tạo đơn</button>
       </form>
     </div>
     <div class="card" id="my-pick" hidden>
@@ -137,7 +240,7 @@
       <form class="form" id="my-pick-form">
         <select id="mp-parcel" class="wide" aria-label="Đơn cần lấy"></select>
         <input id="mp-otp" class="wide" placeholder="Mã OTP (6 chữ số)" inputmode="numeric" pattern="[0-9]{6}" autocomplete="one-time-code" required>
-        <button class="btn wide" type="submit">Mở ngăn</button>
+        <button class="btn primary wide" type="submit">Mở ngăn</button>
       </form>
     </div>
   </section>
@@ -149,8 +252,8 @@
 
 <!-- ===== Trung tâm vận hành (ADMIN, OPERATOR) ===== -->
 <div class="wrap" id="app" hidden>
-  <header>
-    <h1>Smart Locker · Trung tâm vận hành</h1>
+  <header class="hero">
+    <h1><span class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="8" height="18" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/><path d="M8.5 10.5v3"/></svg></span><span class="brand-name">SMART LOCKER</span><span class="brand-sub">Trung tâm vận hành</span></h1>
     <div class="who"><span id="who"></span><span class="status" id="status" role="status" aria-live="polite"></span><button class="btn" id="logout">Đăng xuất</button></div>
   </header>
 
@@ -162,10 +265,10 @@
 
   <main id="main">
     <section class="kpis" aria-label="Tổng quan">
-      <div class="tile"><div class="label">Tủ online</div><div class="value" id="k-online">–</div><div class="note" id="k-online-note"></div></div>
-      <div class="tile"><div class="label">Lấp đầy ngăn</div><div class="value" id="k-fill">–</div><div class="note" id="k-fill-note"></div></div>
-      <div class="tile"><div class="label">Đơn chờ lấy</div><div class="value" id="k-wait">–</div></div>
-      <div class="tile"><div class="label">Cảnh báo đang mở</div><div class="value" id="k-alerts">–</div></div>
+      <div class="tile k-online"><div class="label">Tủ online</div><div class="value" id="k-online">–</div><span class="ico" aria-hidden="true">◉</span><div class="note" id="k-online-note"></div></div>
+      <div class="tile k-fill"><div class="label">Lấp đầy ngăn</div><div class="value" id="k-fill">–</div><span class="ico" aria-hidden="true">▦</span><div class="note" id="k-fill-note"></div><div class="bar" aria-hidden="true"><i id="k-fill-bar"></i></div></div>
+      <div class="tile k-wait"><div class="label">Đơn chờ lấy</div><div class="value" id="k-wait">–</div><span class="ico" aria-hidden="true">▣</span><div class="note">Hàng đã bỏ vào, chưa lấy</div></div>
+      <div class="tile k-alerts"><div class="label">Cảnh báo đang mở</div><div class="value" id="k-alerts">–</div><span class="ico" aria-hidden="true">▲</span><div class="note">Cần người vận hành xử lý</div></div>
     </section>
 
     <section class="row2">
@@ -176,7 +279,7 @@
       </div>
       <div class="card">
         <div class="head"><div><h2 id="comp-title">Lưới ngăn</h2><div class="sub">Trạng thái, mã đơn và thời gian đã nằm trong tủ</div></div>
-          <div class="legend"><span><i class="sw" style="background:var(--surface);border:1px solid var(--axis)"></i>Trống</span><span><i class="sw" style="background:var(--series-1)"></i>Có hàng</span><span>⚠ Cửa mở</span></div></div>
+          <div class="legend"><span><i class="sw" style="background:var(--good)"></i>Trống</span><span><i class="sw" style="background:var(--info)"></i>Có hàng</span><span><i class="sw" style="background:var(--critical)"></i>⚠ Cửa mở</span></div></div>
         <div class="comps" id="comps"></div>
       </div>
     </section>
@@ -202,7 +305,7 @@
         <div class="head"><div><h2>Chi tiết tủ</h2><div class="sub">Trạng thái tức thời đọc từ Redis</div></div></div>
         <dl class="kv" id="detail"></dl>
         <div class="actions" id="admin-actions" hidden>
-          <button class="btn" id="btn-ota">Cập nhật firmware (OTA)</button>
+          <button class="btn primary" id="btn-ota">Cập nhật firmware (OTA)</button>
           <button class="btn danger" id="btn-revoke">Thu hồi tủ (bị mất cắp)</button>
         </div>
       </div>
@@ -224,7 +327,7 @@
           <input id="pf-phone" placeholder="SĐT người nhận" required>
           <select id="pf-size"><option value="S">Nhỏ (S)</option><option value="M" selected>Vừa (M)</option><option value="L">Lớn (L)</option></select>
           <select id="pf-locker" aria-label="Tủ"><option value="">Tủ nào cũng được</option></select>
-          <button class="btn wide" type="submit">Tạo đơn</button>
+          <button class="btn primary wide" type="submit">Tạo đơn</button>
         </form>
       </div>
       <div class="card" id="sms-card" hidden>
@@ -265,8 +368,8 @@ const PARCEL_VN = { CREATED: "Chờ gửi vào tủ", DEPOSITED: "Đang chờ l�
 const SEV = { high: { label: "Cao", icon: "▲", color: "var(--critical)" }, medium: { label: "Trung bình", icon: "◆", color: "var(--serious)" }, low: { label: "Thấp", icon: "●", color: "var(--warning)" } };
 // Mỗi trạng thái có biểu tượng + chữ, không chỉ màu (người mù màu vẫn phân biệt được)
 const LOCKER_STATE = {
-  alert: { label: "Có cảnh báo", icon: "▲", color: "var(--critical)" }, offline: { label: "Offline", icon: "○", color: "var(--muted)" },
-  sleep: { label: "Đang ngủ", icon: "◐", color: "var(--warning)" }, online: { label: "Online", icon: "●", color: "var(--good)" },
+  alert: { key: "alert", label: "Có cảnh báo", icon: "▲", color: "var(--critical)" }, offline: { key: "offline", label: "Offline", icon: "○", color: "var(--muted)" },
+  sleep: { key: "sleep", label: "Đang ngủ", icon: "◐", color: "var(--warning)" }, online: { key: "online", label: "Online", icon: "●", color: "var(--good)" },
 };
 const lockerState = (l) => (l.open_alerts ? LOCKER_STATE.alert : !l.online && l.sleeping ? LOCKER_STATE.sleep : !l.online ? LOCKER_STATE.offline : LOCKER_STATE.online);
 
@@ -291,7 +394,7 @@ async function api(path, opts = {}, retry = true) {
   if (!res.ok) { const e = new Error(path + " " + res.status); e.status = res.status; e.body = await res.json().catch(() => ({})); throw e; }
   return res.json();
 }
-function showLogin() { stopLive(); $("#app").hidden = true; $("#my").hidden = true; $("#login").hidden = false; state.access = state.refresh = null; state.view = null; }
+function showLogin() { stopLive(); $("#app").hidden = true; $("#my").hidden = true; $("#login").hidden = false; state.access = state.refresh = null; state.view = null; try { $("#phone").focus(); } catch (e) { /* chưa hiển thị */ } }
 function toast(msg) { const t = h("div", { class: "toast", role: "status" }, msg); document.body.append(t); setTimeout(() => t.remove(), 3500); }
 
 $("#login-form").addEventListener("submit", async (e) => {
@@ -306,6 +409,10 @@ $("#login-form").addEventListener("submit", async (e) => {
   else { $("#login-error").textContent = "Tài khoản này chưa được cấp quyền nào."; showLogin(); }
 });
 $("#logout").addEventListener("click", showLogin);
+$("#pw-toggle").addEventListener("click", (e) => {
+  const input = $("#password"), show = input.type === "password";
+  input.type = show ? "text" : "password"; e.currentTarget.textContent = show ? "Ẩn" : "Hiện"; e.currentTarget.setAttribute("aria-pressed", String(show));
+});
 $("#my-logout").addEventListener("click", showLogin);
 
 /* ---------- biểu đồ ---------- */
@@ -366,8 +473,8 @@ function drawLine(host, rows, cfg) {
   pts.forEach((p, i) => { if (i % every === 0) { const t = s("text", { x: x(i), y: H - 6, "text-anchor": "middle" }); t.textContent = `${pad(p.r.hour.getHours())}h`; svg.append(t); } });
   host.replaceChildren(svg);
 }
-const drawBattery = (host, rows) => drawLine(host, rows, { get: (r) => (r.min_battery_mv != null ? r.min_battery_mv / 1000 : null), step: 0.5, label: (v) => v.toFixed(2).replace(/\.?0+$/, "") + " V", aria: "Điện áp pin thấp nhất theo giờ", empty: "Chưa đủ dữ liệu pin", color: "var(--series-1)" });
-const drawRssi = (host, rows) => drawLine(host, rows, { get: (r) => r.avg_rssi_dbm, step: 10, label: (v) => Math.round(v) + " dBm", aria: "RSSI trung bình theo giờ", empty: "Chưa đủ dữ liệu RSSI", color: "var(--series-2)" });
+const drawBattery = (host, rows) => drawLine(host, rows, { get: (r) => (r.min_battery_mv != null ? r.min_battery_mv / 1000 : null), step: 0.5, label: (v) => v.toFixed(2).replace(/\.?0+$/, "") + " V", aria: "Điện áp pin thấp nhất theo giờ", empty: "Chưa đủ dữ liệu pin", color: "var(--series-3)" });
+const drawRssi = (host, rows) => drawLine(host, rows, { get: (r) => r.avg_rssi_dbm, step: 10, label: (v) => Math.round(v) + " dBm", aria: "RSSI trung bình theo giờ", empty: "Chưa đủ dữ liệu RSSI", color: "var(--series-4)" });
 
 const charts = {};
 function setChart(id, rows, draw, tableEl) {
@@ -437,6 +544,7 @@ function renderSummary(sm) {
   $("#k-online-note").textContent = sm.lockers_sleeping ? `${sm.lockers_sleeping} tủ đang ngủ sâu (tiết kiệm điện)` : "";
   $("#k-fill").textContent = `${Math.round(sm.fill_rate * 100)}%`;
   $("#k-fill-note").textContent = `${sm.compartments_occupied} / ${sm.compartments_total} ngăn có hàng`;
+  $("#k-fill-bar").style.width = `${Math.round(sm.fill_rate * 100)}%`;
   $("#k-wait").textContent = fmt.format(sm.parcels_waiting);
   $("#k-alerts").textContent = fmt.format(sm.open_alerts);
   $("#k-alerts").style.color = sm.open_alerts ? "var(--critical)" : "";
@@ -446,7 +554,7 @@ function renderLockers(list) {
   if (!state.locker && list.length) state.locker = list[0].locker_id;
   renderMap(list);
   $("#lockers").replaceChildren(...list.map((l) => { const st = lockerState(l);
-    return h("button", { class: "locker", "aria-pressed": String(l.locker_id === state.locker), onclick: () => { state.locker = l.locker_id; refresh(); } },
+    return h("button", { class: `locker st-${st.key}`, "aria-pressed": String(l.locker_id === state.locker), onclick: () => { state.locker = l.locker_id; refresh(); } },
       h("span", { class: "state" }, h("i", { style: `color:${st.color}`, "aria-hidden": "true" }, st.icon), st.label),
       h("span", { class: "name" }, l.name),
       h("span", { class: "state" }, l.open_alerts ? `${l.open_alerts} cảnh báo` : ""),
@@ -457,9 +565,12 @@ function renderComps(list, lockerName) {
   $("#comps").replaceChildren(...list.map((c) => {
     const cls = c.door_open ? "open" : c.status === "OCCUPIED" ? "occupied" : c.status === "FAULT" ? "fault" : "";
     const status = c.door_open ? "⚠ Cửa mở!" : c.status === "OCCUPIED" ? "Có hàng" : c.status === "FAULT" ? "Lỗi" : "Trống";
-    return h("div", { class: `comp ${cls}` }, h("span", { class: "no" }, `${pad(c.comp_no)} · ${c.size_code}`), h("span", { class: "st" }, status),
-      h("span", { class: "pid" }, c.parcel_id || ""),
-      h("span", { class: "dwell" }, c.dwell_seconds != null ? `đã nằm ${dwell(c.dwell_seconds)}` : ""),
+    return h("div", { class: `comp ${cls}`, role: "group", "aria-label": `Ngăn ${c.comp_no}, cỡ ${c.size_code}: ${status}` },
+      h("span", { class: "led", "aria-hidden": "true" }),
+      h("span", { class: "no" }, h("span", { class: "plate" }, pad(c.comp_no)), h("span", { class: `chip ${c.size_code}`, title: `Cỡ ${c.size_code}` }, c.size_code)),
+      h("span", { class: "st" }, status),
+      c.parcel_id ? h("span", { class: "pid" }, c.parcel_id) : null,
+      c.dwell_seconds != null ? h("span", { class: "dwell" }, `đã nằm ${dwell(c.dwell_seconds)}`) : null,
       can("locker:remote_open") ? h("button", { class: "btn danger", onclick: () => remoteOpen(c.comp_no) }, "Mở khẩn cấp") : null);
   }));
 }
@@ -479,13 +590,17 @@ function renderAlerts(list) {
   const host = $("#alerts");
   if (!list.length) { host.replaceChildren(h("div", { class: "empty" }, "Không có cảnh báo")); return; }
   host.replaceChildren(...list.map((a) => { const sv = SEV[a.severity] || SEV.low;
-    return h("div", { class: `alert${a.acknowledged ? " acked" : ""}` }, h("span", { class: "sev" }, h("i", { style: `color:${sv.color}`, "aria-hidden": "true" }, sv.icon), sv.label),
+    return h("div", { class: `alert sev-${a.severity}${a.acknowledged ? " acked" : ""}` }, h("span", { class: "sev" }, h("i", { style: `color:${sv.color}`, "aria-hidden": "true" }, sv.icon), sv.label),
       h("strong", {}, ALERT_VN[a.type] || a.type), a.acknowledged ? h("span", { class: "sub" }, "Đã xem") : h("button", { class: "btn", onclick: () => ack(a.id) }, "Đã xem"),
       h("div", { class: "msg" }, a.message), h("div", { class: "when" }, `${dt(a.created_at)} · ${a.locker_id || ""}${a.comp_no ? " · ngăn " + a.comp_no : ""}`)); }));
 }
 async function ack(id) { await api(`/alerts/${id}/ack`, { method: "POST" }); refresh(); }
+const EVENT_COLOR = { DEPOSIT: "b-blue", PICKUP: "b-green", DOOR_OPEN: "b-amber", DOOR_CLOSE: "b-gray", TAMPER: "b-red", HEARTBEAT: "b-gray", OTP_LOCKOUT: "b-red" };
+const PARCEL_COLOR = { CREATED: "b-amber", DEPOSITED: "b-blue", PICKED: "b-green", EXPIRED: "b-red" };
+const SMS_COLOR = { SENT: "b-green", QUEUED: "b-gray", RETRY: "b-amber", FAILED: "b-red" };
+const pill = (text, cls) => h("span", { class: `badge ${cls || "b-gray"}` }, text);
 function renderEvents(list) {
-  $("#events").replaceChildren(list.length ? tableOf(["Thời gian", "Sự kiện", "Ngăn", "Đơn", "Pin (V)", "RSSI"], list.map((e) => [dt(e.ts), `${EVENT_VN[e.event] || e.event}${e.ts_estimated ? " *" : ""}`, e.comp_no || "", e.parcel_id || "", e.battery_mv ? (e.battery_mv / 1000).toFixed(2) : "", e.rssi_dbm || ""])) : h("div", { class: "empty" }, "Chưa có sự kiện"));
+  $("#events").replaceChildren(list.length ? tableOf(["Thời gian", "Sự kiện", "Ngăn", "Đơn", "Pin (V)", "RSSI"], list.map((e) => [dt(e.ts), pill(`${EVENT_VN[e.event] || e.event}${e.ts_estimated ? " *" : ""}`, EVENT_COLOR[e.event]), e.comp_no || "", e.parcel_id || "", e.battery_mv ? (e.battery_mv / 1000).toFixed(2) : "", e.rssi_dbm || ""])) : h("div", { class: "empty" }, "Chưa có sự kiện"));
 }
 
 let busy = false;
@@ -504,7 +619,7 @@ async function refresh() {
     setChart("rssi", rows, drawRssi, tableOf(["Giờ", "RSSI TB (dBm)"], rows.filter((r) => r.avg_rssi_dbm != null).map((r) => [label(r), r.avg_rssi_dbm])));
     $("#hourly-sub").textContent = state.locker ? `Tủ ${state.locker}` : "Mọi tủ";
     renderAlerts(alerts); renderEvents(events);
-    if (can("admin:manage")) { const sms = await api("/sms-outbox?limit=20"); $("#sms").replaceChildren(sms.length ? tableOf(["Thời gian", "Đến", "Nội dung", "Trạng thái"], sms.map((m) => [dt(m.created_at), m.to_phone, m.body, m.status])) : h("div", { class: "empty" }, "Chưa có tin nhắn")); }
+    if (can("admin:manage")) { const sms = await api("/sms-outbox?limit=20"); $("#sms").replaceChildren(sms.length ? tableOf(["Thời gian", "Đến", "Nội dung", "Trạng thái"], sms.map((m) => [dt(m.created_at), m.to_phone, m.body, pill(m.status, SMS_COLOR[m.status])])) : h("div", { class: "empty" }, "Chưa có tin nhắn")); }
     $("#status").className = "status"; $("#status").textContent = `${live.open ? "Trực tiếp · " : ""}cập nhật ${new Date().toLocaleTimeString("vi-VN", { hour12: false })}`;
   } catch (e) { if (e.message !== "401") { $("#status").className = "status error"; $("#status").textContent = "Không kết nối được backend, giữ dữ liệu cũ"; } }
   finally { $("#main").classList.remove("loading"); busy = false; }
@@ -548,7 +663,7 @@ function stopLive() { live.want = false; clearInterval(live.poll); clearTimeout(
 function startOps() {
   state.view = "ops";
   $("#login").hidden = true; $("#my").hidden = true; $("#app").hidden = false;
-  $("#who").textContent = `${state.claims.phone} · ${state.claims.role}`;
+  $("#who").replaceChildren(state.claims.phone, h("span", { class: "role" }, state.claims.role));
   $("#parcel-card").hidden = !can("parcel:deposit"); $("#sms-card").hidden = !can("admin:manage");
   $("#admin-row").hidden = $("#parcel-card").hidden && $("#sms-card").hidden;
   $("#admin-actions").hidden = !can("admin:manage");
@@ -562,7 +677,7 @@ async function loadMine() {
     const list = await api("/my/parcels");
     $("#my-sub").textContent = can("parcel:pickup") ? "Đơn gửi tới số điện thoại của bạn" : "Đơn do bạn tạo";
     $("#my-list").replaceChildren(list.length ? tableOf(["Mã đơn", "Trạng thái", "Tủ", "Ngăn", "Tạo lúc", "Gửi vào tủ", "Đã lấy", "OTP hết hạn"],
-      list.map((p) => [p.parcel_id, PARCEL_VN[p.status] || p.status, p.locker_name ? `${p.locker_name}${p.address ? " · " + p.address : ""}` : "chưa gán", p.comp_no || "", dt(p.created_at), p.deposited_at ? dt(p.deposited_at) : "", p.picked_at ? dt(p.picked_at) : "", p.status === "DEPOSITED" && p.otp_expires_at ? dt(p.otp_expires_at) : ""]))
+      list.map((p) => [p.parcel_id, pill(PARCEL_VN[p.status] || p.status, PARCEL_COLOR[p.status]), p.locker_name ? `${p.locker_name}${p.address ? " · " + p.address : ""}` : "chưa gán", p.comp_no || "", dt(p.created_at), p.deposited_at ? dt(p.deposited_at) : "", p.picked_at ? dt(p.picked_at) : "", p.status === "DEPOSITED" && p.otp_expires_at ? dt(p.otp_expires_at) : ""]))
       : h("div", { class: "empty" }, "Chưa có đơn nào"));
     const waiting = list.filter((p) => p.status === "DEPOSITED");
     $("#mp-parcel").replaceChildren(...(waiting.length ? waiting.map((p) => h("option", { value: JSON.stringify([p.locker_id, p.comp_no]) }, `Đơn ${p.parcel_id} · ${p.locker_name || p.locker_id} · ngăn ${p.comp_no}`)) : [h("option", { value: "" }, "Chưa có đơn nào đang chờ lấy")]));
@@ -571,7 +686,7 @@ async function loadMine() {
 function startMy() {
   state.view = "my";
   $("#login").hidden = true; $("#app").hidden = true; $("#my").hidden = false;
-  $("#my-who").textContent = `${state.claims.phone} · ${state.claims.role}`;
+  $("#my-who").replaceChildren(state.claims.phone, h("span", { class: "role" }, state.claims.role));
   $("#my-new").hidden = !can("parcel:deposit"); $("#my-pick").hidden = !can("parcel:pickup");
   if (can("parcel:deposit")) api("/lockers/available").then((ls) => $("#mn-locker").replaceChildren(h("option", { value: "" }, "Tủ nào cũng được"), ...ls.map((l) => h("option", { value: l.locker_id }, `${l.name}${l.address ? " · " + l.address : ""}`)))).catch(() => {});
   loadMine();

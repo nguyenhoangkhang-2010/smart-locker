@@ -15,6 +15,11 @@
 #ifndef SECRET_COMP_SIZES
 #define SECRET_COMP_SIZES "SSSMMMLL"
 #endif
+// Mô phỏng Wokwi 8 ngăn: Wokwi không có PCF8574 nên dùng 74HC595 (8 khóa) + 74HC165 (8 cửa) thay thế, chỉ 6 chân ESP32.
+// Bật bằng SECRET_SHIFT_IO 1 (tools/wokwi_demo_setup.py làm giúp). Tủ thật: 0, dùng PCF8574 như đề.
+#ifndef SECRET_SHIFT_IO
+#define SECRET_SHIFT_IO 0
+#endif
 struct HwConfig {
   uint8_t  numCompartments  = SECRET_NUM_COMPARTMENTS;   // số ngăn tủ
   uint8_t  keypadRows[4]    = {13, 12, 14, 27};
@@ -27,6 +32,9 @@ struct HwConfig {
   uint8_t  lockGpio[8]      = {21, 22, 19, 0, 0, 0, 0, 0};
   // Reed switch từng ngăn (0 = chưa đấu: coi như cửa đóng). 34/36/39 chỉ vào, cần điện trở kéo lên ngoài.
   uint8_t  doorGpio[8]      = {34, 36, 39, 0, 0, 0, 0, 0};
+  bool     shiftRegIo       = SECRET_SHIFT_IO;
+  uint8_t  srData = 21, srClock = 22, srLatch = 19;         // 74HC595: DS, SHCP, STCP (khóa)
+  uint8_t  srLoad = 16, srInClock = 17, srInData = 34;      // 74HC165: PL, CP, Q7 (cửa)
   uint8_t  doorSensorPin    = 34;              // reed switch tổng (đánh thức EXT0 khi cửa bị mở trái phép)
   bool     doorClosedIsHigh = false;           // reed đóng = nối GND = LOW
   uint16_t solenoidPulseMs  = 500;             // thời gian cấp điện mở chốt

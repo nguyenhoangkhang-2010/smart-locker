@@ -82,9 +82,11 @@ def main() -> None:
     secrets_text = set_define(secrets_text, "SECRET_MQTT_TLS", "0")
     # Demo: không ngủ sâu, nếu không sau 30 giây tủ ngủ và backend thấy tủ "offline" suốt buổi thử
     secrets_text = set_define(secrets_text, "SECRET_DEEP_SLEEP", "0")
-    # Sơ đồ Wokwi chỉ đấu 3 ngăn: firmware và backend phải cùng biết, nếu không tủ offline có thể chọn ngăn không có thật
-    secrets_text = set_define(secrets_text, "SECRET_NUM_COMPARTMENTS", "3")
-    secrets_text = set_define(secrets_text, "SECRET_COMP_SIZES", '"MMM"')
+    # Sơ đồ Wokwi 8 ngăn (tools/make_wokwi_diagram.py): khóa qua 74HC595, cửa qua 74HC165 thay cho PCF8574 (Wokwi không có).
+    # Firmware và backend phải cùng số ngăn và cỡ, nếu không tủ offline có thể chọn ngăn mà cloud không có.
+    secrets_text = set_define(secrets_text, "SECRET_SHIFT_IO", "1")
+    secrets_text = set_define(secrets_text, "SECRET_NUM_COMPARTMENTS", "8")
+    secrets_text = set_define(secrets_text, "SECRET_COMP_SIZES", '"SSSMMMLL"')
     secrets_text = set_define(secrets_text, "SECRET_DEVICE_ID", f'"{device_id}"')
     SECRETS.write_text(secrets_text, encoding="utf-8")
 
@@ -104,14 +106,17 @@ def main() -> None:
     from app.services import lockers
 
     migrate()
-    # sơ đồ Wokwi chỉ có 3 ngăn (LED + công tắc cửa ở GPIO tương ứng): chỉ đăng ký 3 ngăn cỡ vừa để đơn nào
-    # cũng rơi vào ngăn có thật. Tủ thật dùng 8 ngăn (3 nhỏ, 3 vừa, 2 lớn).
-    lockers.register_locker(device_id, "Tu demo Wokwi", sizes="MMM", address="Wokwi")
+    # 8 ngăn như đề (3 nhỏ, 3 vừa, 2 lớn). Tủ demo đã đăng ký từ bản 3 ngăn thì thêm ngăn 4-8 và đặt lại cỡ cho khớp firmware.
+    sizes = lockers.DEFAULT_SIZES
+    lockers.register_locker(device_id, "Tu demo Wokwi", sizes=sizes, address="Wokwi")
+    from app.db import query
+    for i, size in enumerate(sizes, start=1):
+        query("UPDATE compartments SET size_code = %s WHERE locker_id = %s AND comp_no = %s", (size, device_id, i))
 
     print(f"đã bật chế độ demo qua {args.broker}:{args.port} (không mã hóa)")
-    print("  include/secrets.h  : SECRET_MQTT_HOST, SECRET_MQTT_TLS 0, SECRET_DEVICE_ID")
+    print("  include/secrets.h  : SECRET_MQTT_HOST, SECRET_MQTT_TLS 0, SECRET_DEVICE_ID, SECRET_SHIFT_IO 1, 8 ngăn")
     print("  backend/.env       : MQTT_HOST/PORT/TLS, MQTT_ONLY_DEVICE, MQTT_CLIENT_ID")
-    print("  database           : đã đăng ký tủ demo với 3 ngăn cỡ vừa (đúng 3 ngăn có trong sơ đồ Wokwi)")
+    print("  database           : tủ demo có 8 ngăn (3 nhỏ, 3 vừa, 2 lớn), khớp sơ đồ Wokwi 8 ngăn")
     print("device_id đã lưu trong hai file trên; hãy giữ kín (trên broker công cộng nó là thứ duy nhất chặn người lạ).")
     print("tiếp theo: pio run -e esp32dev, rồi mở Wokwi. Xem README gốc, mục 'Chạy trong Wokwi'.")
 
