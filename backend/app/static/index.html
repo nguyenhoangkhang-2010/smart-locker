@@ -7,230 +7,230 @@
 <style>
   :root {
     color-scheme: light;
-    --page: #f9f9f7;
-    --surface: #fcfcfb;
-    --ink: #0b0b0b;
-    --ink-2: #52514e;
-    --muted: #898781;
-    --grid: #e1e0d9;
-    --axis: #c3c2b7;
-    --border: rgba(11, 11, 11, 0.10);
-    --wash: rgba(11, 11, 11, 0.05);
-    --series-1: #2a78d6;
-    --series-2: #eb6834;
-    --critical: #d03b3b;
-    --serious: #ec835a;
-    --warning: #fab219;
-    --good: #0ca30c;
+    --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+    --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,.10); --wash: rgba(11,11,11,.05);
+    --series-1: #2a78d6; --series-2: #eb6834;
+    --critical: #d03b3b; --serious: #ec835a; --warning: #fab219; --good: #0ca30c;
   }
   @media (prefers-color-scheme: dark) {
     :root:where(:not([data-theme="light"])) {
-      color-scheme: dark;
-      --page: #0d0d0d;
-      --surface: #1a1a19;
-      --ink: #f0efec;
-      --ink-2: #c3c2b7;
-      --muted: #898781;
-      --grid: #2c2c2a;
-      --axis: #383835;
-      --border: rgba(255, 255, 255, 0.10);
-      --wash: rgba(255, 255, 255, 0.06);
-      --series-1: #3987e5;
-      --series-2: #d95926;
+      color-scheme: dark; --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7;
+      --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,.10); --wash: rgba(255,255,255,.06);
+      --series-1: #3987e5; --series-2: #d95926;
     }
   }
   :root[data-theme="dark"] {
-    color-scheme: dark;
-    --page: #0d0d0d;
-    --surface: #1a1a19;
-    --ink: #f0efec;
-    --ink-2: #c3c2b7;
-    --muted: #898781;
-    --grid: #2c2c2a;
-    --axis: #383835;
-    --border: rgba(255, 255, 255, 0.10);
-    --wash: rgba(255, 255, 255, 0.06);
-    --series-1: #3987e5;
-    --series-2: #d95926;
+    color-scheme: dark; --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,.10); --wash: rgba(255,255,255,.06);
+    --series-1: #3987e5; --series-2: #d95926;
   }
-
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }   /* các lớp có display riêng (.actions, .form...) không được đè thuộc tính hidden */
   html { background: var(--page); }
-  body {
-    margin: 0;
-    background: var(--page);
-    color: var(--ink);
-    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
-  }
+  body { margin: 0; background: var(--page); color: var(--ink); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
   .wrap { max-width: 1200px; margin: 0 auto; padding: 24px 16px 48px; }
-
-  header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
   h1 { font-size: 20px; font-weight: 600; margin: 0; }
+  .who { color: var(--ink-2); font-size: 12px; display: flex; gap: 12px; align-items: center; }
   .status { color: var(--muted); font-size: 12px; }
   .status.error { color: var(--critical); }
-
-  /* filters: one row above everything they scope */
-  .filters { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin: 16px 0 20px; }
+  button, select, input { font: inherit; color: var(--ink); }
+  .btn, select, input { border: 1px solid var(--border); border-radius: 8px; background: var(--surface); padding: 7px 10px; }
+  .btn { cursor: pointer; } .btn:hover { background: var(--wash); }
+  .btn.danger { border-color: var(--critical); }
+  button:focus-visible, select:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px; }
   .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--surface); }
-  .seg button { border: 0; background: transparent; color: var(--ink-2); padding: 7px 12px; font: inherit; cursor: pointer; }
+  .seg button { border: 0; background: transparent; color: var(--ink-2); padding: 7px 12px; cursor: pointer; }
   .seg button + button { border-left: 1px solid var(--border); }
-  .seg button:hover { background: var(--wash); }
   .seg button[aria-pressed="true"] { color: var(--ink); font-weight: 600; background: var(--wash); }
-  select, .btn {
-    border: 1px solid var(--border); border-radius: 8px; background: var(--surface);
-    color: var(--ink); padding: 7px 10px; font: inherit;
-  }
-  .btn { cursor: pointer; }
-  .btn:hover { background: var(--wash); }
-  button:focus-visible, select:focus-visible, input:focus-visible, [tabindex]:focus-visible {
-    outline: 2px solid var(--series-1); outline-offset: 2px;
-  }
+  .filters { display: flex; gap: 12px; align-items: center; margin: 16px 0 20px; flex-wrap: wrap; }
 
-  main.loading .card, main.loading .tile { opacity: 0.6; }
-  .card, .tile { transition: opacity 0.15s; }
-
-  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; min-width: 0; }
+  .card, .tile { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; min-width: 0; transition: opacity .15s; }
+  main.loading .card, main.loading .tile { opacity: .6; }
   .card h2 { font-size: 14px; font-weight: 600; margin: 0; }
-  .card .sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
-  .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
-  .card-head .tools { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
-  .card-head label { color: var(--ink-2); font-size: 12px; display: inline-flex; gap: 6px; align-items: center; }
-
+  .sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; margin-bottom: 12px; flex-wrap: wrap; }
+  .tools { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
   .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 12px; }
-  .tile { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
-  .tile .label { color: var(--ink-2); font-size: 12px; }
-  .tile .value { font-size: 28px; font-weight: 600; line-height: 1.2; margin-top: 4px; }
-  .tile .note { color: var(--muted); font-size: 12px; margin-top: 2px; }
-
-  .row2 { display: grid; grid-template-columns: 3fr 2fr; gap: 12px; margin-bottom: 12px; }
+  .tile { padding: 14px 16px; } .tile .label { color: var(--ink-2); font-size: 12px; }
+  .tile .value { font-size: 28px; font-weight: 600; line-height: 1.2; margin-top: 4px; } .tile .note { color: var(--muted); font-size: 12px; }
+  .row2 { display: grid; grid-template-columns: 2fr 3fr; gap: 12px; margin-bottom: 12px; }
   .row3 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
 
+  .lockers { display: grid; gap: 8px; }
+  .locker { display: grid; grid-template-columns: auto 1fr auto; gap: 2px 10px; padding: 10px; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; background: transparent; text-align: left; width: 100%; }
+  .locker[aria-pressed="true"] { background: var(--wash); border-color: var(--ink-2); }
+  .locker .name { font-weight: 600; } .locker .meta { color: var(--muted); font-size: 12px; grid-column: 2 / 4; }
+  .state { display: inline-flex; gap: 6px; align-items: center; font-size: 12px; white-space: nowrap; }
+  .state i { font-style: normal; }
+  .map { margin-bottom: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--page); overflow: hidden; }
+  .map svg { display: block; width: 100%; height: auto; } .map text { font: 11px system-ui, -apple-system, "Segoe UI", sans-serif; fill: var(--ink-2); }
+  .map .pin { cursor: pointer; } .map .pin:focus-visible { outline: none; } .map .pin:focus-visible .halo { stroke: var(--series-1); stroke-width: 2; }
+  .map .legend { padding: 6px 10px; border-top: 1px solid var(--border); flex-wrap: wrap; }
+  .comps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .comp { border: 1px solid var(--border); border-radius: 8px; padding: 8px; min-height: 92px; display: flex; flex-direction: column; gap: 2px; }
+  .comp .no { font-weight: 600; } .comp .st { font-size: 12px; color: var(--ink-2); } .comp .pid { font-size: 11px; color: var(--muted); word-break: break-all; }
+  .comp .dwell { font-size: 11px; color: var(--ink-2); }
+  .comp.occupied { background: color-mix(in srgb, var(--series-1) 14%, var(--surface)); }
+  .comp.open { border: 2px solid var(--critical); }
+  .comp.fault { background: repeating-linear-gradient(45deg, var(--wash), var(--wash) 4px, transparent 4px, transparent 8px); }
+  .comp .btn { margin-top: auto; padding: 3px 8px; font-size: 12px; }
   .legend { display: flex; gap: 16px; font-size: 12px; color: var(--ink-2); }
-  .legend span { display: inline-flex; align-items: center; gap: 6px; }
-  .swatch { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
-
+  .legend span { display: inline-flex; gap: 6px; align-items: center; } .sw { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
   .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
   .chart text { font: 11px system-ui, -apple-system, "Segoe UI", sans-serif; fill: var(--muted); }
   .chart .peak { fill: var(--ink-2); font-weight: 600; }
-  .empty { color: var(--muted); padding: 32px 0; text-align: center; }
-
+  .empty { color: var(--muted); padding: 28px 0; text-align: center; }
   table { width: 100%; border-collapse: collapse; }
   th { text-align: left; color: var(--ink-2); font-weight: 500; font-size: 12px; padding: 6px 8px; border-bottom: 1px solid var(--axis); white-space: nowrap; }
-  td { padding: 7px 8px; border-bottom: 1px solid var(--grid); vertical-align: top; }
-  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
-  td.time { white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--ink-2); }
+  td { padding: 7px 8px; border-bottom: 1px solid var(--grid); vertical-align: top; } td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.time { white-space: nowrap; color: var(--ink-2); font-variant-numeric: tabular-nums; }
   .scroll { overflow-x: auto; }
-  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
-
   .alert { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 12px; padding: 10px 0; border-bottom: 1px solid var(--grid); }
-  .alert:last-child { border-bottom: 0; }
-  .alert.acked { opacity: 0.55; }
-  .sev { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; white-space: nowrap; }
-  .sev i { font-style: normal; font-size: 12px; }
-  .alert .what { font-weight: 600; }
-  .alert .when { color: var(--muted); font-size: 12px; white-space: nowrap; }
-  .alert .why { grid-column: 2 / 4; color: var(--ink-2); }
-  .alert .where { grid-column: 2 / 4; color: var(--muted); font-size: 12px; }
-  .alert-list { max-height: 420px; overflow-y: auto; }
-  .shots { grid-column: 2 / 4; display: flex; gap: 10px; flex-wrap: wrap; margin: 4px 0; }
-  .shot { display: flex; flex-direction: column; gap: 4px; width: 112px; color: var(--ink-2); font-size: 11px; text-decoration: none; }
-  .shot img { width: 112px; height: 84px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); background: var(--wash); }
-
-  .tip {
-    position: fixed; z-index: 10; pointer-events: none; display: none;
-    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
-    padding: 8px 10px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15); font-size: 12px; min-width: 190px;
-  }
-  .tip .t-name { white-space: nowrap; }
-  .tip .t-head { color: var(--ink-2); margin-bottom: 4px; }
-  .tip .t-row { display: flex; align-items: center; gap: 8px; }
-  .tip .t-key { width: 10px; height: 3px; border-radius: 2px; flex: none; }
-  .tip .t-val { font-weight: 600; color: var(--ink); margin-left: auto; padding-left: 12px; font-variant-numeric: tabular-nums; }
-  .tip .t-name { color: var(--ink-2); }
-
-  .more { margin-top: 12px; text-align: center; }
-
-  @media (max-width: 900px) {
-    .kpis { grid-template-columns: repeat(2, 1fr); }
-    .row2, .row3 { grid-template-columns: 1fr; }
-  }
+  .alert:last-child { border-bottom: 0; } .alert.acked { opacity: .55; }
+  .sev { display: inline-flex; gap: 6px; font-size: 12px; font-weight: 600; white-space: nowrap; } .sev i { font-style: normal; }
+  .alert .msg { grid-column: 2 / 4; color: var(--ink-2); } .alert .when { color: var(--muted); font-size: 12px; grid-column: 2 / 4; }
+  .list { max-height: 380px; overflow-y: auto; }
+  .form { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; } .form .wide { grid-column: 1 / 3; }
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; } .kv dt { color: var(--ink-2); } .kv dd { margin: 0; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .badge { display: inline-flex; gap: 4px; align-items: center; font-size: 12px; border: 1px solid var(--border); border-radius: 999px; padding: 1px 8px; }
+  .tip { position: fixed; z-index: 10; pointer-events: none; display: none; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; box-shadow: 0 4px 16px rgba(0,0,0,.15); font-size: 12px; min-width: 170px; }
+  .tip .r { display: flex; gap: 8px; align-items: center; } .tip .k { width: 10px; height: 3px; border-radius: 2px; } .tip .v { font-weight: 600; margin-left: auto; padding-left: 12px; }
+  .toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--page); padding: 10px 16px; border-radius: 8px; z-index: 20; max-width: 90vw; }
+  #login { max-width: 360px; margin: 14vh auto; } #login form { display: grid; gap: 10px; } #login .err { color: var(--critical); min-height: 1.4em; }
+  @media (max-width: 900px) { .kpis { grid-template-columns: repeat(2, 1fr); } .row2, .row3 { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
-<div class="wrap">
+<section id="login" class="card" hidden>
+  <h1>Smart Locker</h1>
+  <p class="sub">Đăng nhập: vận hành xem trung tâm giám sát; shipper tạo đơn; người nhận xem đơn và lấy hàng.</p>
+  <form id="login-form">
+    <input id="phone" autocomplete="username" placeholder="Số điện thoại" required>
+    <input id="password" type="password" autocomplete="current-password" placeholder="Mật khẩu" required>
+    <button class="btn" type="submit">Đăng nhập</button>
+    <div class="err" id="login-error" role="alert"></div>
+  </form>
+</section>
+
+<!-- ===== Giao diện shipper / người nhận (không có quyền xem dashboard vận hành) ===== -->
+<div class="wrap" id="my" hidden>
   <header>
-    <h1>Smart Locker</h1>
-    <div class="status" id="status" role="status" aria-live="polite">Đang tải…</div>
+    <h1>Smart Locker · Đơn của tôi</h1>
+    <div class="who"><span id="my-who"></span><button class="btn" id="my-logout">Đăng xuất</button></div>
+  </header>
+  <div class="filters"></div>
+  <section class="row3">
+    <div class="card" id="my-new" hidden>
+      <div class="head"><div><h2>Tạo đơn gửi hàng</h2><div class="sub">Chọn tủ để shipper gửi được cả khi tủ mất mạng. Nhập mã đơn trên keypad của tủ (phím A)</div></div></div>
+      <form class="form" id="my-new-form">
+        <input id="mn-id" placeholder="Mã đơn (1-12 chữ số)" inputmode="numeric" pattern="[0-9]{1,12}" required>
+        <input id="mn-phone" placeholder="SĐT người nhận" required>
+        <select id="mn-size"><option value="S">Nhỏ (S)</option><option value="M" selected>Vừa (M)</option><option value="L">Lớn (L)</option></select>
+        <select id="mn-locker" aria-label="Tủ"></select>
+        <button class="btn wide" type="submit">Tạo đơn</button>
+      </form>
+    </div>
+    <div class="card" id="my-pick" hidden>
+      <div class="head"><div><h2>Lấy hàng bằng mã OTP</h2><div class="sub">Mã 6 số trong tin nhắn. Sai 5 lần, ngăn bị khóa 15 phút</div></div></div>
+      <form class="form" id="my-pick-form">
+        <select id="mp-parcel" class="wide" aria-label="Đơn cần lấy"></select>
+        <input id="mp-otp" class="wide" placeholder="Mã OTP (6 chữ số)" inputmode="numeric" pattern="[0-9]{6}" autocomplete="one-time-code" required>
+        <button class="btn wide" type="submit">Mở ngăn</button>
+      </form>
+    </div>
+  </section>
+  <div class="card">
+    <div class="head"><div><h2>Đơn của tôi</h2><div class="sub" id="my-sub"></div></div><button class="btn" id="my-reload">Tải lại</button></div>
+    <div class="scroll" id="my-list"></div>
+  </div>
+</div>
+
+<!-- ===== Trung tâm vận hành (ADMIN, OPERATOR) ===== -->
+<div class="wrap" id="app" hidden>
+  <header>
+    <h1>Smart Locker · Trung tâm vận hành</h1>
+    <div class="who"><span id="who"></span><span class="status" id="status" role="status" aria-live="polite"></span><button class="btn" id="logout">Đăng xuất</button></div>
   </header>
 
-  <div class="filters" aria-label="Bộ lọc">
+  <div class="filters">
     <div class="seg" id="range" role="group" aria-label="Khoảng thời gian">
-      <button data-days="1" aria-pressed="false">Hôm nay</button>
-      <button data-days="7" aria-pressed="true">7 ngày</button>
-      <button data-days="30" aria-pressed="false">30 ngày</button>
-      <button data-days="90" aria-pressed="false">90 ngày</button>
+      <button data-h="24" aria-pressed="true">24 giờ</button><button data-h="72" aria-pressed="false">3 ngày</button>
     </div>
-    <select id="locker" aria-label="Tủ"><option value="">Tất cả tủ</option></select>
-    <select id="result" aria-label="Kết quả">
-      <option value="">Mọi kết quả</option>
-      <option value="true">Thành công</option>
-      <option value="false">Thất bại / từ chối</option>
-    </select>
   </div>
 
   <main id="main">
     <section class="kpis" aria-label="Tổng quan">
-      <div class="tile"><div class="label">Lượt truy cập</div><div class="value" id="k-events">–</div><div class="note" id="k-users"></div></div>
-      <div class="tile"><div class="label">Tỷ lệ thành công</div><div class="value" id="k-rate">–</div><div class="note" id="k-success"></div></div>
-      <div class="tile"><div class="label">Lượt thất bại hoặc bị từ chối</div><div class="value" id="k-failed">–</div><div class="note" id="k-failed-note"></div></div>
-      <div class="tile"><div class="label">Cảnh báo chưa xử lý</div><div class="value" id="k-alerts">–</div><div class="note">trong khoảng đã chọn</div></div>
+      <div class="tile"><div class="label">Tủ online</div><div class="value" id="k-online">–</div><div class="note" id="k-online-note"></div></div>
+      <div class="tile"><div class="label">Lấp đầy ngăn</div><div class="value" id="k-fill">–</div><div class="note" id="k-fill-note"></div></div>
+      <div class="tile"><div class="label">Đơn chờ lấy</div><div class="value" id="k-wait">–</div></div>
+      <div class="tile"><div class="label">Cảnh báo đang mở</div><div class="value" id="k-alerts">–</div></div>
     </section>
 
     <section class="row2">
-      <div class="card" id="card-daily">
-        <div class="card-head">
-          <div><h2>Lượt truy cập theo ngày</h2><div class="sub">Số lần xác thực mỗi ngày</div></div>
-          <div class="tools">
-            <div class="legend" aria-label="Chú thích">
-              <span><i class="swatch" style="background:var(--series-1)"></i>Thành công</span>
-              <span><i class="swatch" style="background:var(--series-2)"></i>Thất bại / từ chối</span>
-            </div>
-            <button class="btn" data-toggle="daily">Xem bảng</button>
-          </div>
-        </div>
-        <div class="chart" id="chart-daily"></div>
-        <div class="scroll" id="table-daily" hidden></div>
+      <div class="card">
+        <div class="head"><div><h2>Bản đồ &amp; danh sách tủ</h2><div class="sub">Chọn một tủ để xem các ngăn</div></div></div>
+        <div class="map" id="map"></div>
+        <div class="lockers" id="lockers"></div>
       </div>
-
-      <div class="card" id="card-hourly">
-        <div class="card-head">
-          <div><h2>Theo giờ trong ngày</h2><div class="sub">Giờ địa phương, cộng dồn cả khoảng</div></div>
-          <div class="tools"><button class="btn" data-toggle="hourly">Xem bảng</button></div>
-        </div>
-        <div class="chart" id="chart-hourly"></div>
-        <div class="scroll" id="table-hourly" hidden></div>
+      <div class="card">
+        <div class="head"><div><h2 id="comp-title">Lưới ngăn</h2><div class="sub">Trạng thái, mã đơn và thời gian đã nằm trong tủ</div></div>
+          <div class="legend"><span><i class="sw" style="background:var(--surface);border:1px solid var(--axis)"></i>Trống</span><span><i class="sw" style="background:var(--series-1)"></i>Có hàng</span><span>⚠ Cửa mở</span></div></div>
+        <div class="comps" id="comps"></div>
       </div>
     </section>
 
     <section class="row3">
       <div class="card">
-        <div class="card-head">
-          <div><h2>Cảnh báo</h2><div class="sub">Do luật và mô hình phát hiện bất thường</div></div>
-          <div class="tools"><label><input type="checkbox" id="unacked" checked> Chỉ chưa xử lý</label></div>
-        </div>
-        <div class="alert-list" id="alerts"></div>
+        <div class="head"><div><h2>Đơn gửi / lấy theo giờ</h2><div class="sub" id="hourly-sub"></div></div>
+          <div class="tools"><div class="legend"><span><i class="sw" style="background:var(--series-1)"></i>Gửi</span><span><i class="sw" style="background:var(--series-2)"></i>Lấy</span></div><button class="btn" data-toggle="hourly">Xem bảng</button></div></div>
+        <div class="chart" id="chart-hourly"></div><div class="scroll" id="table-hourly" hidden></div>
       </div>
-
       <div class="card">
-        <div class="card-head"><div><h2>Người dùng</h2><div class="sub">Quyền mở tủ và số thông tin xác thực đã đăng ký</div></div></div>
-        <div class="scroll" id="users"></div>
+        <div class="head"><div><h2>Điện áp pin thấp nhất theo giờ</h2><div class="sub">Tủ đang chọn</div></div><button class="btn" data-toggle="battery">Xem bảng</button></div>
+        <div class="chart" id="chart-battery"></div><div class="scroll" id="table-battery" hidden></div>
       </div>
     </section>
 
-    <section class="card">
-      <div class="card-head"><div><h2>Nhật ký truy cập</h2><div class="sub" id="log-sub"></div></div></div>
-      <div class="scroll" id="log"></div>
-      <div class="more"><button class="btn" id="more" hidden>Tải thêm</button></div>
+    <section class="row3">
+      <div class="card">
+        <div class="head"><div><h2>Cường độ sóng (RSSI) trung bình theo giờ</h2><div class="sub">Tủ đang chọn; càng gần 0 dBm càng tốt</div></div><button class="btn" data-toggle="rssi">Xem bảng</button></div>
+        <div class="chart" id="chart-rssi"></div><div class="scroll" id="table-rssi" hidden></div>
+      </div>
+      <div class="card" id="detail-card">
+        <div class="head"><div><h2>Chi tiết tủ</h2><div class="sub">Trạng thái tức thời đọc từ Redis</div></div></div>
+        <dl class="kv" id="detail"></dl>
+        <div class="actions" id="admin-actions" hidden>
+          <button class="btn" id="btn-ota">Cập nhật firmware (OTA)</button>
+          <button class="btn danger" id="btn-revoke">Thu hồi tủ (bị mất cắp)</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="row3">
+      <div class="card"><div class="head"><div><h2>Cảnh báo</h2></div><label class="sub"><input type="checkbox" id="unacked" checked> Chỉ chưa xử lý</label></div><div class="list" id="alerts"></div></div>
+      <div class="card">
+        <div class="head"><div><h2>Nhật ký sự kiện mới nhất</h2></div></div>
+        <div class="scroll list" id="events"></div>
+      </div>
+    </section>
+
+    <section class="row3" id="admin-row" hidden>
+      <div class="card" id="parcel-card" hidden>
+        <div class="head"><div><h2>Tạo đơn gửi hàng</h2><div class="sub">Shipper nhập mã đơn này trên keypad của tủ</div></div></div>
+        <form class="form" id="parcel-form">
+          <input id="pf-id" placeholder="Mã đơn (1-12 chữ số)" inputmode="numeric" pattern="[0-9]{1,12}" required>
+          <input id="pf-phone" placeholder="SĐT người nhận" required>
+          <select id="pf-size"><option value="S">Nhỏ (S)</option><option value="M" selected>Vừa (M)</option><option value="L">Lớn (L)</option></select>
+          <select id="pf-locker" aria-label="Tủ"><option value="">Tủ nào cũng được</option></select>
+          <button class="btn wide" type="submit">Tạo đơn</button>
+        </form>
+      </div>
+      <div class="card" id="sms-card" hidden>
+        <div class="head"><div><h2>Tin nhắn OTP</h2><div class="sub">Không đặt SMS_GATEWAY_URL: bản thử, mã hiện ở đây. Có cổng thật: gửi xong mã bị che</div></div></div>
+        <div class="scroll list" id="sms"></div>
+      </div>
     </section>
   </main>
 </div>
@@ -238,368 +238,362 @@
 
 <script>
 "use strict";
-
-const METHOD = { PIN: "Mã PIN", RFID: "Thẻ RFID", FINGERPRINT: "Vân tay", FACE: "Khuôn mặt" };
-const RESULT = { SUCCESS: "Thành công", FAILED: "Sai thông tin", DENIED: "Không có quyền", LOCKOUT: "Bị khóa" };
-const ALERT_TYPE = {
-  BRUTE_FORCE: "Dò mật khẩu / thẻ",
-  NO_PERMISSION_PROBE: "Dò quyền truy cập",
-  NIGHT_ACCESS: "Truy cập ban đêm",
-  ANOMALY: "Hành vi bất thường",
-};
-// status colours are fixed and always paired with an icon and a label
-const SEVERITY = {
-  high: { label: "Cao", icon: "▲", color: "var(--critical)" },
-  medium: { label: "Trung bình", icon: "◆", color: "var(--serious)" },
-  low: { label: "Thấp", icon: "●", color: "var(--warning)" },
-};
-
-const state = { days: 7, locker: "", success: "", unacked: true, pageSize: 25, logRows: [], logDone: false };
-const charts = [];
-
-const $ = (selector) => document.querySelector(selector);
-
-// DOM helper: strings are always inserted as text, never as HTML
+const $ = (s) => document.querySelector(s);
 function h(tag, props = {}, ...kids) {
   const el = document.createElement(tag);
-  for (const [key, value] of Object.entries(props)) {
-    if (key === "class") el.className = value;
-    else if (key.startsWith("on")) el.addEventListener(key.slice(2), value);
-    else if (value === true) el.setAttribute(key, "");
-    else if (value !== false && value != null) el.setAttribute(key, value);
+  for (const [k, v] of Object.entries(props)) {
+    if (k === "class") el.className = v; else if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+    else if (v === true) el.setAttribute(k, ""); else if (v !== false && v != null) el.setAttribute(k, v);
   }
   for (const kid of kids.flat()) if (kid != null) el.append(kid);
   return el;
 }
-const SVG = "http://www.w3.org/2000/svg";
-function s(tag, attrs = {}, ...kids) {
-  const el = document.createElementNS(SVG, tag);
-  for (const [key, value] of Object.entries(attrs)) el.setAttribute(key, value);
-  for (const kid of kids) el.append(kid);
-  return el;
+const SVGNS = "http://www.w3.org/2000/svg";
+function s(tag, attrs = {}) { const el = document.createElementNS(SVGNS, tag); for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v); return el; }
+const fmt = new Intl.NumberFormat("vi-VN"), pad = (n) => String(n).padStart(2, "0");
+const dt = (iso) => { const d = new Date(iso); return `${pad(d.getDate())}/${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`; };
+function dwell(sec) {
+  if (sec == null) return "";
+  if (sec < 60) return "vừa mới gửi";
+  const m = Math.floor(sec / 60) % 60, hh = Math.floor(sec / 3600) % 24, d = Math.floor(sec / 86400);
+  return d ? `${d} ngày ${hh} giờ` : hh ? `${hh} giờ ${m} phút` : `${m} phút`;
 }
 
-const fmt = new Intl.NumberFormat("vi-VN");
-const pad = (n) => String(n).padStart(2, "0");
-function dateTime(iso) {
-  const d = new Date(iso);
-  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+const EVENT_VN = { DEPOSIT: "Gửi hàng", PICKUP: "Lấy hàng", DOOR_OPEN: "Mở cửa", DOOR_CLOSE: "Đóng cửa", TAMPER: "Cửa bị cạy", HEARTBEAT: "Heartbeat", OTP_LOCKOUT: "Khóa ngăn", UNKNOWN: "Không rõ" };
+const ALERT_VN = { TAMPER: "Cửa bị mở trái phép", DOOR_OPEN_TOO_LONG: "Cửa mở quá lâu", OTP_LOCKOUT: "Ngăn bị khóa (sai OTP)", DEVICE_OFFLINE: "Tủ mất kết nối", BUFFER_CRITICAL: "Bộ đệm sự kiện đầy", COMMAND_FAILED: "Tủ từ chối lệnh", DEPOSIT_CONFLICT: "Gửi hàng offline bị xung đột ngăn", SMS_FAILED: "Không gửi được tin nhắn OTP" };
+const PARCEL_VN = { CREATED: "Chờ gửi vào tủ", DEPOSITED: "Đang chờ lấy", PICKED: "Đã lấy", EXPIRED: "Hết hạn" };
+const SEV = { high: { label: "Cao", icon: "▲", color: "var(--critical)" }, medium: { label: "Trung bình", icon: "◆", color: "var(--serious)" }, low: { label: "Thấp", icon: "●", color: "var(--warning)" } };
+// Mỗi trạng thái có biểu tượng + chữ, không chỉ màu (người mù màu vẫn phân biệt được)
+const LOCKER_STATE = {
+  alert: { label: "Có cảnh báo", icon: "▲", color: "var(--critical)" }, offline: { label: "Offline", icon: "○", color: "var(--muted)" },
+  sleep: { label: "Đang ngủ", icon: "◐", color: "var(--warning)" }, online: { label: "Online", icon: "●", color: "var(--good)" },
+};
+const lockerState = (l) => (l.open_alerts ? LOCKER_STATE.alert : !l.online && l.sleeping ? LOCKER_STATE.sleep : !l.online ? LOCKER_STATE.offline : LOCKER_STATE.online);
+
+const state = { access: null, refresh: null, claims: null, hours: 24, locker: "", lockers: [], view: null };
+
+/* ---------- API + đăng nhập (token chỉ nằm trong bộ nhớ, tải lại trang là đăng nhập lại) ---------- */
+function claimsOf(token) { try { return JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))); } catch (e) { return null; } }
+function setTokens(t) { state.access = t.access_token; state.refresh = t.refresh_token; state.claims = claimsOf(t.access_token); }
+const can = (perm) => !!(state.claims && state.claims.perms && state.claims.perms.includes(perm));
+
+let refreshing = null;
+async function refreshTokens() {
+  if (!state.refresh) return false;
+  refreshing = refreshing || fetch("/auth/refresh", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ refresh_token: state.refresh }) })
+    .then(async (r) => { if (!r.ok) return false; setTokens(await r.json()); return true; }).catch(() => false).finally(() => { refreshing = null; });
+  return refreshing;
 }
-function shortDay(iso) { const [, m, d] = iso.split("-"); return `${d}/${m}`; }
-
-async function api(path, params = {}) {
-  const query = new URLSearchParams();
-  for (const [key, value] of Object.entries(params)) if (value !== "" && value != null) query.set(key, value);
-  const response = await fetch(`${path}?${query}`);
-  if (!response.ok) throw new Error(`${path} ${response.status}`);
-  return response.json();
+async function api(path, opts = {}, retry = true) {
+  const res = await fetch(path, { ...opts, headers: { ...(opts.headers || {}), authorization: `Bearer ${state.access}`, ...(opts.body ? { "content-type": "application/json" } : {}) } });
+  if (res.status === 401 && retry && await refreshTokens()) return api(path, opts, false);
+  if (res.status === 401) { showLogin(); throw new Error("401"); }
+  if (!res.ok) { const e = new Error(path + " " + res.status); e.status = res.status; e.body = await res.json().catch(() => ({})); throw e; }
+  return res.json();
 }
-const scope = () => ({ days: state.days, locker: state.locker });
+function showLogin() { stopLive(); $("#app").hidden = true; $("#my").hidden = true; $("#login").hidden = false; state.access = state.refresh = null; state.view = null; }
+function toast(msg) { const t = h("div", { class: "toast", role: "status" }, msg); document.body.append(t); setTimeout(() => t.remove(), 3500); }
 
-/* ---------- stacked column chart (SVG) ---------- */
+$("#login-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  $("#login-error").textContent = "";
+  const res = await fetch("/auth/login", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ phone: $("#phone").value, password: $("#password").value }) });
+  if (res.status === 429) { $("#login-error").textContent = "Sai quá nhiều lần, thử lại sau 15 phút."; return; }
+  if (!res.ok) { $("#login-error").textContent = "Sai số điện thoại hoặc mật khẩu."; return; }
+  setTokens(await res.json());
+  $("#password").value = "";
+  if (can("dashboard:view")) startOps(); else if (can("parcel:deposit") || can("parcel:pickup")) startMy();
+  else { $("#login-error").textContent = "Tài khoản này chưa được cấp quyền nào."; showLogin(); }
+});
+$("#logout").addEventListener("click", showLogin);
+$("#my-logout").addEventListener("click", showLogin);
 
+/* ---------- biểu đồ ---------- */
 const tip = $("#tip");
 function showTip(anchor, head, rows) {
-  tip.replaceChildren(
-    h("div", { class: "t-head" }, head),
-    ...rows.map((row) =>
-      h("div", { class: "t-row" },
-        row.color ? h("span", { class: "t-key", style: `background:${row.color}` }) : h("span", { class: "t-key" }),
-        h("span", { class: "t-name" }, row.name),
-        h("span", { class: "t-val" }, fmt.format(row.value))
-      )
-    )
-  );
+  tip.replaceChildren(h("div", { class: "sub" }, head), ...rows.map((r) => h("div", { class: "r" }, h("span", { class: "k", style: r.color ? `background:${r.color}` : "" }), h("span", {}, r.name), h("span", { class: "v" }, r.value))));
   tip.style.display = "block";
-  const box = anchor.getBoundingClientRect();
-  const w = tip.offsetWidth, hgt = tip.offsetHeight;
-  let x = box.left + box.width / 2 - w / 2;
-  x = Math.max(8, Math.min(x, window.innerWidth - w - 8));
-  let y = box.top - hgt - 8;
-  if (y < 8) y = box.bottom + 8;
-  tip.style.left = `${x}px`;
-  tip.style.top = `${y}px`;
+  const b = anchor.getBoundingClientRect(), w = tip.offsetWidth, hh = tip.offsetHeight;
+  tip.style.left = `${Math.max(8, Math.min(b.left + b.width / 2 - w / 2, innerWidth - w - 8))}px`;
+  tip.style.top = `${b.top - hh - 8 < 8 ? b.bottom + 8 : b.top - hh - 8}px`;
 }
 const hideTip = () => { tip.style.display = "none"; };
+function niceScale(max) { if (max <= 0) return { top: 4, step: 1 }; const raw = max / 4, mag = 10 ** Math.floor(Math.log10(raw)); const step = Math.max(1, [1, 2, 5, 10].map((m) => m * mag).find((v) => v >= raw)); return { top: Math.ceil(max / step) * step, step }; }
+function columnPath(x, y, w, hh, round) { const r = Math.min(4, w / 2, hh); if (!round || r <= 0) return `M${x},${y}h${w}v${hh}h${-w}Z`; return `M${x},${y + hh}V${y + r}A${r},${r} 0 0 1 ${x + r},${y}H${x + w - r}A${r},${r} 0 0 1 ${x + w},${y + r}V${y + hh}Z`; }
 
-function niceScale(max) {
-  if (max <= 0) return { top: 4, step: 1 };
-  const raw = max / 4;
-  const mag = 10 ** Math.floor(Math.log10(raw));
-  const step = Math.max(1, [1, 2, 5, 10].map((m) => m * mag).find((v) => v >= raw));
-  return { top: Math.ceil(max / step) * step, step };
-}
-const compact = (n) => (n >= 1000 ? `${n / 1000}K` : String(n));
-
-// 4px rounded data-end, square at the baseline / inner joint
-function columnPath(x, y, w, hgt, round) {
-  const r = Math.min(4, w / 2, hgt);
-  if (!round || r <= 0) return `M${x},${y}h${w}v${hgt}h${-w}Z`;
-  return `M${x},${y + hgt}V${y + r}A${r},${r} 0 0 1 ${x + r},${y}H${x + w - r}A${r},${r} 0 0 1 ${x + w},${y + r}V${y + hgt}Z`;
-}
-
-function drawStacked(host, rows, cfg) {
-  const width = host.clientWidth;
-  if (!width) return;
-  const height = 230;
-  const m = { left: 34, right: 6, top: 18, bottom: 24 };
-  const plotW = width - m.left - m.right, plotH = height - m.top - m.bottom;
-  const total = (r) => r.success + r.failed;
-  const max = Math.max(0, ...rows.map(total));
-
-  if (max === 0) {
-    host.replaceChildren(h("div", { class: "empty" }, "Chưa có dữ liệu trong khoảng này"));
-    return;
-  }
-
-  const { top, step } = niceScale(max);
-  const y = (v) => m.top + plotH - (v / top) * plotH;
-  const band = plotW / rows.length;
-  const barW = Math.max(2, Math.min(24, band * 0.7));
-
-  const svg = s("svg", { viewBox: `0 0 ${width} ${height}`, role: "img", "aria-label": cfg.aria });
-
-  for (let v = 0; v <= top; v += step) {
-    svg.append(s("line", { x1: m.left, x2: width - m.right, y1: y(v), y2: y(v), stroke: v === 0 ? "var(--axis)" : "var(--grid)", "stroke-width": 1 }));
-    const label = s("text", { x: m.left - 6, y: y(v) + 4, "text-anchor": "end" });
-    label.textContent = compact(v);
-    svg.append(label);
-  }
-
-  const wash = s("rect", { y: m.top, height: plotH, fill: "var(--wash)", visibility: "hidden" });
-  svg.append(wash);
-
-  const every = Math.ceil(rows.length / Math.max(2, Math.floor(plotW / 54)));
-  const peak = rows.reduce((best, r, i) => (total(r) > total(rows[best]) ? i : best), 0);
-
+function drawHourly(host, rows) {
+  const width = host.clientWidth; if (!width) return;
+  const H = 220, m = { left: 30, right: 6, top: 16, bottom: 22 }, pw = width - m.left - m.right, ph = H - m.top - m.bottom;
+  const max = Math.max(0, ...rows.map((r) => r.deposits + r.pickups));
+  if (!max) { host.replaceChildren(h("div", { class: "empty" }, "Chưa có đơn gửi/lấy trong khoảng này")); return; }
+  const { top, step } = niceScale(max), y = (v) => m.top + ph - (v / top) * ph, band = pw / rows.length, bw = Math.max(2, Math.min(24, band * 0.7));
+  const svg = s("svg", { viewBox: `0 0 ${width} ${H}`, role: "img", "aria-label": "Đơn gửi và lấy theo giờ" });
+  for (let v = 0; v <= top; v += step) { svg.append(s("line", { x1: m.left, x2: width - m.right, y1: y(v), y2: y(v), stroke: v ? "var(--grid)" : "var(--axis)" })); const t = s("text", { x: m.left - 6, y: y(v) + 4, "text-anchor": "end" }); t.textContent = v; svg.append(t); }
+  const wash = s("rect", { y: m.top, height: ph, fill: "var(--wash)", visibility: "hidden" }); svg.append(wash);
+  const every = Math.ceil(rows.length / Math.max(2, Math.floor(pw / 46)));
   rows.forEach((r, i) => {
-    const cx = m.left + band * i + band / 2;
-    const x = cx - barW / 2;
-    const gap = r.success > 0 && r.failed > 0 ? 2 : 0;
-    const hs = r.success ? Math.max(2, (r.success / top) * plotH) : 0;
-    const hf = r.failed ? Math.max(2, (r.failed / top) * plotH - gap) : 0;
-
-    if (hs) svg.append(s("path", { d: columnPath(x, y(0) - hs, barW, hs, !hf), fill: "var(--series-1)" }));
-    if (hf) svg.append(s("path", { d: columnPath(x, y(0) - hs - gap - hf, barW, hf, true), fill: "var(--series-2)" }));
-
-    if (i % every === 0) {
-      const tick = s("text", { x: cx, y: height - 6, "text-anchor": "middle" });
-      tick.textContent = cfg.tick(r);
-      svg.append(tick);
-    }
-    if (i === peak) {
-      const cap = s("text", { x: cx, y: y(0) - hs - gap - hf - 5, "text-anchor": "middle", class: "peak" });
-      cap.textContent = fmt.format(total(r));
-      svg.append(cap);
-    }
-
-    const show = () => {
-      wash.setAttribute("x", m.left + band * i);
-      wash.setAttribute("width", band);
-      wash.setAttribute("visibility", "visible");
-      showTip(hit, cfg.label(r), [
-        { name: "Thành công", value: r.success, color: "var(--series-1)" },
-        { name: "Thất bại / từ chối", value: r.failed, color: "var(--series-2)" },
-        { name: "Tổng", value: total(r) },
-      ]);
-    };
+    const cx = m.left + band * i + band / 2, x = cx - bw / 2, gap = r.deposits && r.pickups ? 2 : 0;
+    const hd = r.deposits ? Math.max(2, r.deposits / top * ph) : 0, hp = r.pickups ? Math.max(2, r.pickups / top * ph - gap) : 0;
+    if (hd) svg.append(s("path", { d: columnPath(x, y(0) - hd, bw, hd, !hp), fill: "var(--series-1)" }));
+    if (hp) svg.append(s("path", { d: columnPath(x, y(0) - hd - gap - hp, bw, hp, true), fill: "var(--series-2)" }));
+    if (i % every === 0) { const t = s("text", { x: cx, y: H - 6, "text-anchor": "middle" }); t.textContent = `${pad(r.hour.getHours())}h`; svg.append(t); }
+    const hit = s("rect", { x: m.left + band * i, y: m.top, width: band, height: ph, fill: "transparent", tabindex: rows.length <= 36 ? 0 : -1, role: "img", "aria-label": `${pad(r.hour.getHours())}h: ${r.deposits} gửi, ${r.pickups} lấy` });
+    const show = () => { wash.setAttribute("x", m.left + band * i); wash.setAttribute("width", band); wash.setAttribute("visibility", "visible"); showTip(hit, `${dt(r.hour).slice(0, 5)} ${pad(r.hour.getHours())}:00`, [{ name: "Gửi", value: r.deposits, color: "var(--series-1)" }, { name: "Lấy", value: r.pickups, color: "var(--series-2)" }]); };
     const hide = () => { wash.setAttribute("visibility", "hidden"); hideTip(); };
-    const hit = s("rect", {
-      x: m.left + band * i, y: m.top, width: band, height: plotH, fill: "transparent",
-      tabindex: rows.length <= 31 ? 0 : -1, role: "img",
-      "aria-label": `${cfg.label(r)}: ${r.success} thành công, ${r.failed} thất bại`,
-    });
-    hit.addEventListener("pointerenter", show);
-    hit.addEventListener("pointerleave", hide);
-    hit.addEventListener("focus", show);
-    hit.addEventListener("blur", hide);
+    ["pointerenter", "focus"].forEach((ev) => hit.addEventListener(ev, show)); ["pointerleave", "blur"].forEach((ev) => hit.addEventListener(ev, hide));
     svg.append(hit);
   });
-
   host.replaceChildren(svg);
 }
 
-function chartTable(rows, labelOf, head) {
-  return h("table", {},
-    h("thead", {}, h("tr", {}, h("th", {}, head), h("th", { class: "num" }, "Thành công"), h("th", { class: "num" }, "Thất bại / từ chối"), h("th", { class: "num" }, "Tổng"))),
-    h("tbody", {}, rows.map((r) =>
-      h("tr", {}, h("td", {}, labelOf(r)), h("td", { class: "num" }, fmt.format(r.success)), h("td", { class: "num" }, fmt.format(r.failed)), h("td", { class: "num" }, fmt.format(r.success + r.failed)))
-    ))
-  );
+// Biểu đồ đường dùng chung cho pin và RSSI. cfg: { get(row) -> số|null, step, label(v), aria, empty, color }
+function drawLine(host, rows, cfg) {
+  const pts = rows.map((r) => ({ r, v: cfg.get(r) })).filter((p) => p.v != null);
+  const width = host.clientWidth; if (!width) return;
+  if (pts.length < 2) { host.replaceChildren(h("div", { class: "empty" }, cfg.empty)); return; }
+  const H = 220, m = { left: 48, right: 28, top: 16, bottom: 22 }, pw = width - m.left - m.right, ph = H - m.top - m.bottom;
+  const vals = pts.map((p) => p.v), lo = Math.floor(Math.min(...vals) / cfg.step) * cfg.step - cfg.step, hi = Math.ceil(Math.max(...vals) / cfg.step) * cfg.step + cfg.step;
+  const x = (i) => m.left + (i / (pts.length - 1)) * pw, y = (v) => m.top + ph - ((v - lo) / (hi - lo)) * ph;
+  const svg = s("svg", { viewBox: `0 0 ${width} ${H}`, role: "img", "aria-label": cfg.aria });
+  for (let v = lo; v <= hi + 1e-9; v += cfg.step) { svg.append(s("line", { x1: m.left, x2: width - m.right, y1: y(v), y2: y(v), stroke: "var(--grid)" })); const t = s("text", { x: m.left - 6, y: y(v) + 4, "text-anchor": "end" }); t.textContent = cfg.label(v); svg.append(t); }
+  const d = pts.map((p, i) => `${i ? "L" : "M"}${x(i)},${y(p.v)}`).join("");
+  svg.append(s("path", { d: `${d}L${x(pts.length - 1)},${y(lo)}L${x(0)},${y(lo)}Z`, fill: cfg.color, opacity: ".1" }));
+  svg.append(s("path", { d, fill: "none", stroke: cfg.color, "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }));
+  const last = pts.length - 1;
+  svg.append(s("circle", { cx: x(last), cy: y(vals[last]), r: 4, fill: cfg.color, stroke: "var(--surface)", "stroke-width": 2 }));
+  const lab = s("text", { x: x(last) - 6, y: y(vals[last]) - 8, "text-anchor": "end", class: "peak" }); lab.textContent = cfg.label(vals[last]); svg.append(lab);
+  const every = Math.ceil(pts.length / Math.max(2, Math.floor(pw / 56)));
+  pts.forEach((p, i) => { if (i % every === 0) { const t = s("text", { x: x(i), y: H - 6, "text-anchor": "middle" }); t.textContent = `${pad(p.r.hour.getHours())}h`; svg.append(t); } });
+  host.replaceChildren(svg);
 }
+const drawBattery = (host, rows) => drawLine(host, rows, { get: (r) => (r.min_battery_mv != null ? r.min_battery_mv / 1000 : null), step: 0.5, label: (v) => v.toFixed(2).replace(/\.?0+$/, "") + " V", aria: "Điện áp pin thấp nhất theo giờ", empty: "Chưa đủ dữ liệu pin", color: "var(--series-1)" });
+const drawRssi = (host, rows) => drawLine(host, rows, { get: (r) => r.avg_rssi_dbm, step: 10, label: (v) => Math.round(v) + " dBm", aria: "RSSI trung bình theo giờ", empty: "Chưa đủ dữ liệu RSSI", color: "var(--series-2)" });
 
-function setChart(id, rows, cfg, tableHead) {
-  let entry = charts.find((c) => c.id === id);
-  if (!entry) {
-    entry = { id, host: $(`#chart-${id}`) };
-    charts.push(entry);
-    new ResizeObserver(() => drawStacked(entry.host, entry.rows, entry.cfg)).observe(entry.host);
-  }
-  entry.rows = rows;
-  entry.cfg = cfg;
-  drawStacked(entry.host, rows, cfg);
-  $(`#table-${id}`).replaceChildren(chartTable(rows, cfg.label, tableHead));
+const charts = {};
+function setChart(id, rows, draw, tableEl) {
+  charts[id] = { rows, draw, host: $(`#chart-${id}`) };
+  if (!charts[id].obs) { charts[id].obs = new ResizeObserver(() => charts[id].draw(charts[id].host, charts[id].rows)); charts[id].obs.observe(charts[id].host); }
+  draw(charts[id].host, rows);
+  $(`#table-${id}`).replaceChildren(tableEl);
 }
-
-document.addEventListener("click", (event) => {
-  const button = event.target.closest("[data-toggle]");
-  if (!button) return;
-  const id = button.dataset.toggle;
-  const tableEl = $(`#table-${id}`), chartEl = $(`#chart-${id}`);
-  const showTable = tableEl.hidden;
-  tableEl.hidden = !showTable;
-  chartEl.hidden = showTable;
-  button.textContent = showTable ? "Xem biểu đồ" : "Xem bảng";
-  if (!showTable) { const entry = charts.find((c) => c.id === id); if (entry) drawStacked(entry.host, entry.rows, entry.cfg); }
+document.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-toggle]"); if (!b) return;
+  const id = b.dataset.toggle, t = $(`#table-${id}`), c = $(`#chart-${id}`), showT = t.hidden;
+  t.hidden = !showT; c.hidden = showT; b.textContent = showT ? "Xem biểu đồ" : "Xem bảng";
+  if (!showT && charts[id]) charts[id].draw(charts[id].host, charts[id].rows);
 });
 
-/* ---------- sections ---------- */
-
-function renderKpis(sum) {
-  $("#k-events").textContent = fmt.format(sum.events);
-  $("#k-users").textContent = `${sum.users} người dùng`;
-  $("#k-rate").textContent = sum.events ? `${Math.round((sum.success / sum.events) * 100)}%` : "–";
-  $("#k-success").textContent = `${fmt.format(sum.success)} lượt thành công`;
-  $("#k-failed").textContent = fmt.format(sum.failed);
-  $("#k-failed-note").textContent = sum.events ? `${Math.round((sum.failed / sum.events) * 100)}% tổng lượt` : "";
-  $("#k-alerts").textContent = fmt.format(sum.open_alerts);
+/* ---------- bản đồ tủ (không cần Internet: chiếu phẳng tọa độ geo của từng tủ) ---------- */
+function renderMap(list) {
+  const host = $("#map"), pts = list.filter((l) => l.lat != null && l.lon != null);
+  if (!pts.length) { host.replaceChildren(h("div", { class: "empty" }, "Chưa có tủ nào có tọa độ (register-locker --lat --lon)")); return; }
+  const W = 560, H = 190, pad_ = 46;
+  let lat0 = Math.min(...pts.map((p) => p.lat)), lat1 = Math.max(...pts.map((p) => p.lat)), lon0 = Math.min(...pts.map((p) => p.lon)), lon1 = Math.max(...pts.map((p) => p.lon));
+  if (lat1 - lat0 < 0.004) { lat0 -= 0.004; lat1 += 0.004; } if (lon1 - lon0 < 0.004) { lon0 -= 0.004; lon1 += 0.004; }
+  const kx = Math.cos(((lat0 + lat1) / 2) * Math.PI / 180);                 // 1° kinh độ ngắn hơn 1° vĩ độ ở xa xích đạo
+  const sx = (W - 2 * pad_) / ((lon1 - lon0) * kx), sy = (H - 2 * pad_) / (lat1 - lat0), k = Math.min(sx, sy);
+  const ox = (W - (lon1 - lon0) * kx * k) / 2, oy = (H - (lat1 - lat0) * k) / 2;
+  const X = (lon) => ox + (lon - lon0) * kx * k, Y = (lat) => H - oy - (lat - lat0) * k;
+  const svg = s("svg", { viewBox: `0 0 ${W} ${H}`, role: "group", "aria-label": "Bản đồ vị trí các tủ" });
+  for (let i = 1; i < 6; i++) { svg.append(s("line", { x1: (W / 6) * i, x2: (W / 6) * i, y1: 0, y2: H, stroke: "var(--grid)" })); if (i < 4) svg.append(s("line", { x1: 0, x2: W, y1: (H / 4) * i, y2: (H / 4) * i, stroke: "var(--grid)" })); }
+  for (const l of pts) {
+    const st = lockerState(l), cx = X(l.lon), cy = Y(l.lat), sel = l.locker_id === state.locker;
+    const g = s("g", { class: "pin", tabindex: 0, role: "button", "aria-pressed": String(sel), "aria-label": `${l.name}: ${st.label}` });
+    g.append(s("circle", { class: "halo", cx, cy, r: 16, fill: sel ? "var(--wash)" : "transparent", stroke: sel ? "var(--ink-2)" : "transparent", "stroke-width": 1.5 }));
+    const mark = st === LOCKER_STATE.alert ? s("path", { d: `M${cx},${cy - 9}L${cx + 9},${cy + 7}L${cx - 9},${cy + 7}Z`, fill: st.color })
+      : st === LOCKER_STATE.offline ? s("circle", { cx, cy, r: 7, fill: "var(--surface)", stroke: st.color, "stroke-width": 2.5 })
+      : st === LOCKER_STATE.sleep ? s("path", { d: `M${cx},${cy - 8}A8,8 0 0 0 ${cx},${cy + 8}Z`, fill: st.color, stroke: st.color, "stroke-width": 1.5 })
+      : s("circle", { cx, cy, r: 7, fill: st.color });
+    g.append(mark);
+    const label = s("text", { x: cx, y: cy + 27, "text-anchor": "middle" }); label.textContent = `${l.name} · ${st.label}`; g.append(label);
+    const pick = () => { state.locker = l.locker_id; refresh(); };
+    g.addEventListener("click", pick); g.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } });
+    svg.append(g);
+  }
+  const legend = h("div", { class: "legend" }, ...Object.values(LOCKER_STATE).map((st) => h("span", {}, h("i", { style: `color:${st.color};font-style:normal`, "aria-hidden": "true" }, st.icon), st.label)));
+  host.replaceChildren(svg, legend);
 }
 
+/* ---------- dữ liệu ---------- */
+function hourlyRows(raw) {
+  const byHour = new Map();
+  for (const r of raw) {
+    if (state.locker && r.locker_id !== state.locker) continue;
+    const k = new Date(r.bucket).getTime(), cur = byHour.get(k) || { hour: new Date(k), deposits: 0, pickups: 0, min_battery_mv: null, avg_rssi_dbm: null };
+    cur.deposits += r.deposits; cur.pickups += r.pickups;
+    if (r.min_battery_mv != null) cur.min_battery_mv = cur.min_battery_mv == null ? r.min_battery_mv : Math.min(cur.min_battery_mv, r.min_battery_mv);
+    if (r.avg_rssi_dbm != null) cur.avg_rssi_dbm = cur.avg_rssi_dbm == null ? r.avg_rssi_dbm : Math.round((cur.avg_rssi_dbm + r.avg_rssi_dbm) / 2);
+    byHour.set(k, cur);
+  }
+  const end = new Date(); end.setMinutes(0, 0, 0);
+  const rows = [];
+  for (let i = state.hours - 1; i >= 0; i--) { const t = new Date(end.getTime() - i * 3600000); rows.push(byHour.get(t.getTime()) || { hour: t, deposits: 0, pickups: 0, min_battery_mv: null, avg_rssi_dbm: null }); }
+  return rows;
+}
+const tableOf = (head, rows) => h("table", {}, h("thead", {}, h("tr", {}, head.map((t, i) => h("th", { class: i ? "num" : "" }, t)))), h("tbody", {}, rows.map((r) => h("tr", {}, r.map((c, i) => h("td", { class: i ? "num" : "" }, c))))));
+
+function renderSummary(sm) {
+  $("#k-online").textContent = `${sm.lockers_online} / ${sm.lockers_total}`;
+  $("#k-online-note").textContent = sm.lockers_sleeping ? `${sm.lockers_sleeping} tủ đang ngủ sâu (tiết kiệm điện)` : "";
+  $("#k-fill").textContent = `${Math.round(sm.fill_rate * 100)}%`;
+  $("#k-fill-note").textContent = `${sm.compartments_occupied} / ${sm.compartments_total} ngăn có hàng`;
+  $("#k-wait").textContent = fmt.format(sm.parcels_waiting);
+  $("#k-alerts").textContent = fmt.format(sm.open_alerts);
+  $("#k-alerts").style.color = sm.open_alerts ? "var(--critical)" : "";
+}
+function renderLockers(list) {
+  state.lockers = list;
+  if (!state.locker && list.length) state.locker = list[0].locker_id;
+  renderMap(list);
+  $("#lockers").replaceChildren(...list.map((l) => { const st = lockerState(l);
+    return h("button", { class: "locker", "aria-pressed": String(l.locker_id === state.locker), onclick: () => { state.locker = l.locker_id; refresh(); } },
+      h("span", { class: "state" }, h("i", { style: `color:${st.color}`, "aria-hidden": "true" }, st.icon), st.label),
+      h("span", { class: "name" }, l.name),
+      h("span", { class: "state" }, l.open_alerts ? `${l.open_alerts} cảnh báo` : ""),
+      h("span", { class: "meta" }, `${l.occupied}/${l.compartments} ngăn có hàng · ${l.address || ""} · thấy lần cuối ${l.last_seen ? dt(l.last_seen) : "chưa"}`)); }));
+}
+function renderComps(list, lockerName) {
+  $("#comp-title").textContent = `Lưới ngăn · ${lockerName || ""}`;
+  $("#comps").replaceChildren(...list.map((c) => {
+    const cls = c.door_open ? "open" : c.status === "OCCUPIED" ? "occupied" : c.status === "FAULT" ? "fault" : "";
+    const status = c.door_open ? "⚠ Cửa mở!" : c.status === "OCCUPIED" ? "Có hàng" : c.status === "FAULT" ? "Lỗi" : "Trống";
+    return h("div", { class: `comp ${cls}` }, h("span", { class: "no" }, `${pad(c.comp_no)} · ${c.size_code}`), h("span", { class: "st" }, status),
+      h("span", { class: "pid" }, c.parcel_id || ""),
+      h("span", { class: "dwell" }, c.dwell_seconds != null ? `đã nằm ${dwell(c.dwell_seconds)}` : ""),
+      can("locker:remote_open") ? h("button", { class: "btn danger", onclick: () => remoteOpen(c.comp_no) }, "Mở khẩn cấp") : null);
+  }));
+}
+async function remoteOpen(comp) {
+  if (!confirm(`Mở khẩn cấp ngăn ${comp} của ${state.locker}? Thao tác được ghi vào nhật ký kiểm toán.`)) return;
+  try { const r = await api(`/lockers/${encodeURIComponent(state.locker)}/compartments/${comp}/open`, { method: "POST" }); toast(r.locker_online ? `Đã gửi lệnh mở ngăn ${comp}` : `Đã gửi lệnh, nhưng tủ đang offline hoặc đang ngủ: tủ nhận khi thức dậy`); } catch (e) { toast("Không gửi được lệnh mở"); }
+}
+function renderDetail(l, st) {
+  const rows = [["Trạng thái", l ? lockerState(l).icon + " " + lockerState(l).label : "–"], ["Firmware", l && l.fw_version || "chưa báo"],
+    ["Thấy lần cuối", l && l.last_seen ? dt(l.last_seen) : "chưa"], ["Địa chỉ", l && l.address || "–"]];
+  if (st) { rows.push(["Lấp đầy (Redis)", `${Math.round(st.fill_rate * 100)}% · ${st.occupied}/${st.compartments} ngăn`]); rows.push(["Bộ đệm sự kiện", st.buffer_critical ? "⚠ ĐẦY, sự kiện mới bị từ chối" : "bình thường"]); }
+  const kids = rows.flatMap(([k, v]) => [h("dt", {}, k), h("dd", {}, v)]);
+  if (l && l.lat != null) kids.push(h("dt", {}, "Vị trí"), h("dd", {}, h("a", { href: `https://www.openstreetmap.org/?mlat=${l.lat}&mlon=${l.lon}#map=17/${l.lat}/${l.lon}`, target: "_blank", rel: "noopener noreferrer" }, `${l.lat.toFixed(4)}, ${l.lon.toFixed(4)} (mở OpenStreetMap)`)));
+  $("#detail").replaceChildren(...kids);
+}
 function renderAlerts(list) {
   const host = $("#alerts");
   if (!list.length) { host.replaceChildren(h("div", { class: "empty" }, "Không có cảnh báo")); return; }
-  host.replaceChildren(...list.map((a) => {
-    const sev = SEVERITY[a.severity] || SEVERITY.low;
-    return h("div", { class: `alert${a.acknowledged ? " acked" : ""}` },
-      h("span", { class: "sev" }, h("i", { style: `color:${sev.color}`, "aria-hidden": "true" }, sev.icon), sev.label),
-      h("span", { class: "what" }, ALERT_TYPE[a.type] || a.type),
-      a.acknowledged ? h("span", { class: "when" }, "Đã xử lý")
-        : h("button", { class: "btn", onclick: () => acknowledge(a.id) }, "Đã xem"),
-      h("div", { class: "why" }, a.explanation),
-      (a.snapshots || []).length ? h("div", { class: "shots" }, a.snapshots.map(snapshotLink)) : null,
-      h("div", { class: "where" }, `${dateTime(a.event_ts)} · ${a.locker_code || "?"}${a.user_name ? " · " + a.user_name : ""}`)
-    );
-  }));
+  host.replaceChildren(...list.map((a) => { const sv = SEV[a.severity] || SEV.low;
+    return h("div", { class: `alert${a.acknowledged ? " acked" : ""}` }, h("span", { class: "sev" }, h("i", { style: `color:${sv.color}`, "aria-hidden": "true" }, sv.icon), sv.label),
+      h("strong", {}, ALERT_VN[a.type] || a.type), a.acknowledged ? h("span", { class: "sub" }, "Đã xem") : h("button", { class: "btn", onclick: () => ack(a.id) }, "Đã xem"),
+      h("div", { class: "msg" }, a.message), h("div", { class: "when" }, `${dt(a.created_at)} · ${a.locker_id || ""}${a.comp_no ? " · ngăn " + a.comp_no : ""}`)); }));
+}
+async function ack(id) { await api(`/alerts/${id}/ack`, { method: "POST" }); refresh(); }
+function renderEvents(list) {
+  $("#events").replaceChildren(list.length ? tableOf(["Thời gian", "Sự kiện", "Ngăn", "Đơn", "Pin (V)", "RSSI"], list.map((e) => [dt(e.ts), `${EVENT_VN[e.event] || e.event}${e.ts_estimated ? " *" : ""}`, e.comp_no || "", e.parcel_id || "", e.battery_mv ? (e.battery_mv / 1000).toFixed(2) : "", e.rssi_dbm || ""])) : h("div", { class: "empty" }, "Chưa có sự kiện"));
 }
 
-// a camera photo taken when the alert fired; the match is only a hint
-function snapshotLink(sn) {
-  const caption = sn.matched_user
-    ? `Giống ${sn.matched_user} (${sn.similarity.toFixed(2)})`
-    : sn.faces ? "Không khớp ai đã đăng ký" : "Không thấy khuôn mặt";
-  return h("a", { class: "shot", href: `/face/snapshots/${sn.id}/image`, target: "_blank", rel: "noopener" },
-    h("img", { src: `/face/snapshots/${sn.id}/image`, alt: "Ảnh từ camera lúc có cảnh báo", loading: "lazy" }),
-    h("span", {}, caption));
-}
-
-async function acknowledge(id) {
-  await fetch(`/alerts/${id}/ack`, { method: "POST" });
-  refresh();
-}
-
-function renderUsers(list) {
-  const cred = (n) => (n ? fmt.format(n) : "–");
-  $("#users").replaceChildren(h("table", {},
-    h("thead", {}, h("tr", {},
-      h("th", {}, "Người dùng"), h("th", {}, "Tủ được mở"),
-      ["PIN", "RFID", "Vân tay", "Mặt"].map((t) => h("th", { class: "num" }, t)))),
-    h("tbody", {}, list.map((u) =>
-      h("tr", {},
-        h("td", {}, u.full_name, u.is_active ? "" : " (đã khóa)"),
-        h("td", {}, u.lockers.length ? u.lockers.join(", ") : "–"),
-        h("td", { class: "num" }, cred(u.pin)), h("td", { class: "num" }, cred(u.rfid)),
-        h("td", { class: "num" }, cred(u.fingerprint)), h("td", { class: "num" }, cred(u.face))))))
-  );
-}
-
-function logTable(rows) {
-  if (!rows.length) return h("div", { class: "empty" }, "Chưa có sự kiện nào");
-  return h("table", {},
-    h("thead", {}, h("tr", {}, ["Thời gian", "Tủ", "Người dùng", "Phương thức", "Kết quả"].map((t) => h("th", {}, t)))),
-    h("tbody", {}, rows.map((r) =>
-      h("tr", {},
-        h("td", { class: "time" }, dateTime(r.ts)),
-        h("td", {}, r.locker_code || "?"),
-        h("td", {}, r.user_name || "Không xác định"),
-        h("td", {}, METHOD[r.method] || r.method),
-        h("td", {}, h("span", { class: "dot", style: `background:var(${r.result === "SUCCESS" ? "--series-1" : "--series-2"})` }), RESULT[r.result] || r.result)))));
-}
-
-function renderLog() {
-  $("#log").replaceChildren(logTable(state.logRows));
-  $("#more").hidden = state.logDone;
-  $("#log-sub").textContent = `${state.logRows.length} sự kiện mới nhất trong khoảng đã chọn`;
-}
-
-async function loadLog(reset) {
-  if (reset) { state.logRows = []; state.logDone = false; }
-  const rows = await api("/events", { ...scope(), success: state.success, limit: reset ? Math.max(state.pageSize, state.logRows.length) : state.pageSize, offset: reset ? 0 : state.logRows.length });
-  state.logRows = reset ? rows : state.logRows.concat(rows);
-  state.logDone = rows.length < state.pageSize;
-  renderLog();
-}
-
-/* ---------- refresh ---------- */
-
-let refreshing = false;
+let busy = false;
 async function refresh() {
-  if (refreshing) return;
-  refreshing = true;
-  $("#main").classList.add("loading");
+  if (busy || !state.access || state.view !== "ops") return; busy = true; $("#main").classList.add("loading");
   try {
-    const keep = Math.max(state.pageSize, state.logRows.length);
-    const [sum, daily, hourly, alerts, users, log] = await Promise.all([
-      api("/stats/summary", scope()),
-      api("/stats/daily", scope()),
-      api("/stats/hourly", scope()),
-      api("/alerts", { ...scope(), acknowledged: state.unacked ? "false" : "", limit: 100 }),
-      api("/users"),
-      api("/events", { ...scope(), success: state.success, limit: keep }),
-    ]);
-    renderKpis(sum);
-    setChart("daily", daily, { label: (r) => shortDay(r.day), tick: (r) => shortDay(r.day), aria: "Lượt truy cập theo ngày" }, "Ngày");
-    setChart("hourly", hourly, { label: (r) => `${pad(r.hour)}:00–${pad(r.hour)}:59`, tick: (r) => `${r.hour}h`, aria: "Lượt truy cập theo giờ trong ngày" }, "Giờ");
-    renderAlerts(alerts);
-    renderUsers(users);
-    state.logRows = log;
-    state.logDone = log.length < keep;
-    renderLog();
-    const status = $("#status");
-    status.className = "status";
-    status.textContent = `Cập nhật ${new Date().toLocaleTimeString("vi-VN", { hour12: false })}`;
-  } catch (error) {
-    const status = $("#status");
-    status.className = "status error";
-    status.textContent = "Không kết nối được backend, đang giữ dữ liệu cũ";
-  } finally {
-    $("#main").classList.remove("loading");
-    refreshing = false;
-  }
+    const [sm, lockers, hourly, alerts, events] = await Promise.all([api("/stats/summary"), api("/lockers"), api(`/stats/hourly?hours=${state.hours}${state.locker ? "&locker_id=" + encodeURIComponent(state.locker) : ""}`),
+      api(`/alerts?limit=100${$("#unacked").checked ? "&acknowledged=false" : ""}`), api(`/events?limit=40${state.locker ? "&locker_id=" + encodeURIComponent(state.locker) : ""}`)]);
+    renderSummary(sm); renderLockers(lockers);
+    const chosen = lockers.find((l) => l.locker_id === state.locker);
+    const [comps, st] = state.locker ? await Promise.all([api(`/lockers/${encodeURIComponent(state.locker)}/compartments`), api(`/lockers/${encodeURIComponent(state.locker)}/status`).catch(() => null)]) : [[], null];
+    renderComps(comps, (chosen || {}).name); renderDetail(chosen, st);
+    const rows = hourlyRows(hourly), label = (r) => `${dt(r.hour).slice(0, 5)} ${pad(r.hour.getHours())}h`;
+    setChart("hourly", rows, drawHourly, tableOf(["Giờ", "Gửi", "Lấy"], rows.map((r) => [label(r), r.deposits, r.pickups])));
+    setChart("battery", rows, drawBattery, tableOf(["Giờ", "Pin thấp nhất (V)"], rows.filter((r) => r.min_battery_mv != null).map((r) => [label(r), (r.min_battery_mv / 1000).toFixed(2)])));
+    setChart("rssi", rows, drawRssi, tableOf(["Giờ", "RSSI TB (dBm)"], rows.filter((r) => r.avg_rssi_dbm != null).map((r) => [label(r), r.avg_rssi_dbm])));
+    $("#hourly-sub").textContent = state.locker ? `Tủ ${state.locker}` : "Mọi tủ";
+    renderAlerts(alerts); renderEvents(events);
+    if (can("admin:manage")) { const sms = await api("/sms-outbox?limit=20"); $("#sms").replaceChildren(sms.length ? tableOf(["Thời gian", "Đến", "Nội dung", "Trạng thái"], sms.map((m) => [dt(m.created_at), m.to_phone, m.body, m.status])) : h("div", { class: "empty" }, "Chưa có tin nhắn")); }
+    $("#status").className = "status"; $("#status").textContent = `${live.open ? "Trực tiếp · " : ""}cập nhật ${new Date().toLocaleTimeString("vi-VN", { hour12: false })}`;
+  } catch (e) { if (e.message !== "401") { $("#status").className = "status error"; $("#status").textContent = "Không kết nối được backend, giữ dữ liệu cũ"; } }
+  finally { $("#main").classList.remove("loading"); busy = false; }
 }
 
-/* ---------- wiring ---------- */
-
-$("#range").addEventListener("click", (event) => {
-  const button = event.target.closest("button");
-  if (!button) return;
-  state.days = Number(button.dataset.days);
-  document.querySelectorAll("#range button").forEach((b) => b.setAttribute("aria-pressed", String(b === button)));
-  state.logRows = [];
-  refresh();
+$("#range").addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; state.hours = Number(b.dataset.h); document.querySelectorAll("#range button").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); refresh(); });
+$("#unacked").addEventListener("change", refresh);
+$("#parcel-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  try { await api("/parcels", { method: "POST", body: JSON.stringify({ parcel_id: $("#pf-id").value, recipient_phone: $("#pf-phone").value, size_code: $("#pf-size").value, locker_id: $("#pf-locker").value || null }) }); toast(`Đã tạo đơn ${$("#pf-id").value}`); $("#pf-id").value = ""; refresh(); }
+  catch (err) { toast(err.status === 409 ? "Mã đơn đã tồn tại" : "Không tạo được đơn"); }
 });
-$("#locker").addEventListener("change", (event) => { state.locker = event.target.value; state.logRows = []; refresh(); });
-$("#result").addEventListener("change", (event) => { state.success = event.target.value; state.logRows = []; refresh(); });
-$("#unacked").addEventListener("change", (event) => { state.unacked = event.target.checked; refresh(); });
-$("#more").addEventListener("click", () => loadLog(false));
+$("#btn-ota").addEventListener("click", async () => {
+  const url = prompt(`URL firmware (https://...) cho ${state.locker}:`); if (!url) return;
+  const sha = prompt("SHA-256 của file firmware (64 ký tự hex):"); if (!sha) return;
+  try { await api(`/lockers/${encodeURIComponent(state.locker)}/ota`, { method: "POST", body: JSON.stringify({ url, sha256: sha.trim() }) }); toast("Đã gửi lệnh OTA. Tủ tải, kiểm SHA-256, ghi phân vùng còn lại rồi khởi động lại"); }
+  catch (e) { toast(e.status === 422 ? "URL phải là https:// và SHA-256 đủ 64 ký tự hex" : "Không gửi được lệnh OTA"); }
+});
+$("#btn-revoke").addEventListener("click", async () => {
+  if (!confirm(`Thu hồi ${state.locker}? Backend sẽ bỏ qua mọi dữ liệu của tủ này. Chỉ dùng khi tủ bị đánh cắp/mất.`)) return;
+  try { const r = await api(`/lockers/${encodeURIComponent(state.locker)}/revoke`, { method: "POST" }); toast(`Đã thu hồi. Bước tiếp: ${r.next_step}`); refresh(); } catch (e) { toast("Không thu hồi được"); }
+});
 
-(async function init() {
+/* ---------- cập nhật trực tiếp qua WebSocket (rớt thì quay về thăm dò 10 giây) ---------- */
+const live = { ws: null, open: false, retry: 0, want: false, soon: null, poll: null };
+function schedulePoll() { clearInterval(live.poll); live.poll = setInterval(() => { if (!document.hidden) refresh(); }, live.open ? 30000 : 10000); }
+function connectLive() {
+  if (!live.want || !can("dashboard:view")) return;
+  const ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/ws");
+  live.ws = ws;
+  ws.onopen = () => ws.send(JSON.stringify({ token: state.access }));
+  ws.onmessage = (e) => {
+    const m = JSON.parse(e.data);
+    if (m.type === "hello") { live.open = true; live.retry = 0; schedulePoll(); return; }
+    clearTimeout(live.soon); live.soon = setTimeout(refresh, 400);          // gộp nhiều tin liên tiếp thành một lần tải
+  };
+  ws.onclose = () => { live.open = false; schedulePoll(); if (live.want) { live.retry = Math.min(live.retry + 1, 6); setTimeout(connectLive, 1000 * 2 ** live.retry); } };
+}
+function stopLive() { live.want = false; clearInterval(live.poll); clearTimeout(live.soon); if (live.ws) { live.ws.onclose = null; live.ws.close(); } live.ws = null; live.open = false; }
+
+function startOps() {
+  state.view = "ops";
+  $("#login").hidden = true; $("#my").hidden = true; $("#app").hidden = false;
+  $("#who").textContent = `${state.claims.phone} · ${state.claims.role}`;
+  $("#parcel-card").hidden = !can("parcel:deposit"); $("#sms-card").hidden = !can("admin:manage");
+  $("#admin-row").hidden = $("#parcel-card").hidden && $("#sms-card").hidden;
+  $("#admin-actions").hidden = !can("admin:manage");
+  if (can("parcel:deposit")) api("/lockers/available").then((ls) => $("#pf-locker").replaceChildren(h("option", { value: "" }, "Tủ nào cũng được"), ...ls.map((l) => h("option", { value: l.locker_id }, l.name)))).catch(() => {});
+  refresh(); live.want = true; connectLive(); schedulePoll();
+}
+
+/* ---------- giao diện shipper / người nhận ---------- */
+async function loadMine() {
   try {
-    const lockers = await api("/lockers");
-    $("#locker").append(...lockers.map((l) => h("option", { value: l.id }, `${l.locker_code} – ${l.name}`)));
-  } catch (error) { /* the refresh below reports the connection problem */ }
-  refresh();
-  setInterval(() => { if (!document.hidden) refresh(); }, 10000);
-})();
+    const list = await api("/my/parcels");
+    $("#my-sub").textContent = can("parcel:pickup") ? "Đơn gửi tới số điện thoại của bạn" : "Đơn do bạn tạo";
+    $("#my-list").replaceChildren(list.length ? tableOf(["Mã đơn", "Trạng thái", "Tủ", "Ngăn", "Tạo lúc", "Gửi vào tủ", "Đã lấy", "OTP hết hạn"],
+      list.map((p) => [p.parcel_id, PARCEL_VN[p.status] || p.status, p.locker_name ? `${p.locker_name}${p.address ? " · " + p.address : ""}` : "chưa gán", p.comp_no || "", dt(p.created_at), p.deposited_at ? dt(p.deposited_at) : "", p.picked_at ? dt(p.picked_at) : "", p.status === "DEPOSITED" && p.otp_expires_at ? dt(p.otp_expires_at) : ""]))
+      : h("div", { class: "empty" }, "Chưa có đơn nào"));
+    const waiting = list.filter((p) => p.status === "DEPOSITED");
+    $("#mp-parcel").replaceChildren(...(waiting.length ? waiting.map((p) => h("option", { value: JSON.stringify([p.locker_id, p.comp_no]) }, `Đơn ${p.parcel_id} · ${p.locker_name || p.locker_id} · ngăn ${p.comp_no}`)) : [h("option", { value: "" }, "Chưa có đơn nào đang chờ lấy")]));
+  } catch (e) { if (e.message !== "401") toast("Không tải được danh sách đơn"); }
+}
+function startMy() {
+  state.view = "my";
+  $("#login").hidden = true; $("#app").hidden = true; $("#my").hidden = false;
+  $("#my-who").textContent = `${state.claims.phone} · ${state.claims.role}`;
+  $("#my-new").hidden = !can("parcel:deposit"); $("#my-pick").hidden = !can("parcel:pickup");
+  if (can("parcel:deposit")) api("/lockers/available").then((ls) => $("#mn-locker").replaceChildren(h("option", { value: "" }, "Tủ nào cũng được"), ...ls.map((l) => h("option", { value: l.locker_id }, `${l.name}${l.address ? " · " + l.address : ""}`)))).catch(() => {});
+  loadMine();
+}
+$("#my-reload").addEventListener("click", loadMine);
+$("#my-new-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  try { await api("/parcels", { method: "POST", body: JSON.stringify({ parcel_id: $("#mn-id").value, recipient_phone: $("#mn-phone").value, size_code: $("#mn-size").value, locker_id: $("#mn-locker").value || null }) }); toast(`Đã tạo đơn ${$("#mn-id").value}`); $("#mn-id").value = ""; loadMine(); }
+  catch (err) { toast(err.status === 409 ? "Mã đơn đã tồn tại" : "Không tạo được đơn"); }
+});
+$("#my-pick-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const sel = $("#mp-parcel").value; if (!sel) { toast("Chưa có đơn nào đang chờ lấy"); return; }
+  const [locker, comp] = JSON.parse(sel);
+  try { await api(`/lockers/${encodeURIComponent(locker)}/compartments/${comp}/pickup`, { method: "POST", body: JSON.stringify({ otp: $("#mp-otp").value }) }); toast(`Đã mở ngăn ${comp}. Hãy lấy hàng rồi đóng cửa`); $("#mp-otp").value = ""; setTimeout(loadMine, 5000); }
+  catch (err) {
+    const d = (err.body && err.body.detail) || {};
+    toast(err.status === 423 ? "Ngăn đang bị khóa 15 phút vì nhập sai nhiều lần" : d.error === "WRONG_OTP" ? `Sai mã OTP, còn ${d.left} lần thử` : d.error === "EXPIRED" ? "Mã OTP đã hết hạn" : err.status === 403 ? "Đơn này không phải của bạn" : "Không mở được ngăn");
+  }
+});
+
+showLogin();
 </script>
 </body>
 </html>
