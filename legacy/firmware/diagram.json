@@ -1,0 +1,229 @@
+{
+  "version": 1,
+  "author": "Khang",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "wokwi-esp32-devkit-v1",
+      "id": "esp",
+      "top": 0,
+      "left": 0,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-servo",
+      "id": "servo",
+      "top": -20,
+      "left": 300,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-membrane-keypad",
+      "id": "keypad",
+      "top": 120,
+      "left": 300,
+      "attrs": {}
+    },
+    {
+      "type": "board-mfrc522",
+      "id": "rfid",
+      "top": 150,
+      "left": 600,
+      "attrs": {
+        "uid": "01:02:03:04"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "ledGreen",
+      "top": 500,
+      "left": 300,
+      "attrs": {
+        "color": "green"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "ledRed",
+      "top": 550,
+      "left": 300,
+      "attrs": {
+        "color": "red"
+      }
+    },
+    {
+      "type": "wokwi-buzzer",
+      "id": "buzzer",
+      "top": 600,
+      "left": 300,
+      "attrs": {}
+    }
+  ],
+  "connections": [
+    [
+      "esp:TX0",
+      "$serialMonitor:RX",
+      "",
+      []
+    ],
+    [
+      "esp:RX0",
+      "$serialMonitor:TX",
+      "",
+      []
+    ],
+
+    [
+      "servo:PWM",
+      "esp:D2",
+      "green",
+      []
+    ],
+    [
+      "servo:V+",
+      "esp:VIN",
+      "red",
+      []
+    ],
+    [
+      "servo:GND",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+
+    [
+      "keypad:R1",
+      "esp:D13",
+      "blue",
+      []
+    ],
+    [
+      "keypad:R2",
+      "esp:D12",
+      "blue",
+      []
+    ],
+    [
+      "keypad:R3",
+      "esp:D14",
+      "blue",
+      []
+    ],
+    [
+      "keypad:R4",
+      "esp:D27",
+      "blue",
+      []
+    ],
+    [
+      "keypad:C1",
+      "esp:D26",
+      "orange",
+      []
+    ],
+    [
+      "keypad:C2",
+      "esp:D25",
+      "orange",
+      []
+    ],
+    [
+      "keypad:C3",
+      "esp:D33",
+      "orange",
+      []
+    ],
+    [
+      "keypad:C4",
+      "esp:D32",
+      "orange",
+      []
+    ],
+
+    [
+      "rfid:SDA",
+      "esp:D5",
+      "purple",
+      []
+    ],
+    [
+      "rfid:SCK",
+      "esp:D18",
+      "yellow",
+      []
+    ],
+    [
+      "rfid:MOSI",
+      "esp:D23",
+      "orange",
+      []
+    ],
+    [
+      "rfid:MISO",
+      "esp:D19",
+      "blue",
+      []
+    ],
+    [
+      "rfid:RST",
+      "esp:D4",
+      "green",
+      []
+    ],
+    [
+      "rfid:3.3V",
+      "esp:3V3",
+      "red",
+      []
+    ],
+    [
+      "rfid:GND",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+
+    [
+      "ledGreen:A",
+      "esp:D21",
+      "green",
+      []
+    ],
+    [
+      "ledGreen:C",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+
+    [
+      "ledRed:A",
+      "esp:D22",
+      "red",
+      []
+    ],
+    [
+      "ledRed:C",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+
+    [
+      "buzzer:1",
+      "esp:D15",
+      "orange",
+      []
+    ],
+    [
+      "buzzer:2",
+      "esp:GND.2",
+      "black",
+      []
+    ]
+  ],
+  "serialMonitor": {
+    "display": "always"
+  }
+}

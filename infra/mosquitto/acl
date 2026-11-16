@@ -1,0 +1,12 @@
+# Backend: toàn quyền trên cây v1/devices (CN = locker-cloud)
+user locker-cloud
+topic readwrite v1/devices/#
+
+# Mỗi tủ (CN = device_id) chỉ dùng topic của CHÍNH MÌNH. %u = tên người dùng = CN chứng chỉ.
+# Nhờ đó Batch.device_id trong payload không thể mạo danh tủ khác: backend tin topic, và topic do broker ép.
+pattern write v1/devices/%u/telemetry
+pattern write v1/devices/%u/attributes
+pattern write v1/devices/%u/rpc/response/+
+pattern write v1/devices/%u/rpc/client/+
+pattern read  v1/devices/%u/rpc/request/+
+pattern read  v1/devices/%u/rpc/client-response/+

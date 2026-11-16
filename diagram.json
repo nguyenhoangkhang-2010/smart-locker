@@ -11,52 +11,129 @@
       "attrs": {}
     },
     {
-      "type": "wokwi-servo",
-      "id": "servo",
-      "top": -20,
-      "left": 300,
-      "attrs": {}
-    },
-    {
       "type": "wokwi-membrane-keypad",
       "id": "keypad",
-      "top": 120,
-      "left": 300,
+      "top": -60,
+      "left": 330,
       "attrs": {}
     },
     {
-      "type": "board-mfrc522",
-      "id": "rfid",
-      "top": 150,
-      "left": 600,
+      "type": "wokwi-ili9341",
+      "id": "tft",
+      "top": -90,
+      "left": 640,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "pot",
+      "top": 300,
+      "left": 350,
       "attrs": {
-        "uid": "01:02:03:04"
+        "value": "670"
+      }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "door1",
+      "top": 420,
+      "left": 330,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rpu1",
+      "top": 500,
+      "left": 330,
+      "attrs": {
+        "value": "10000"
+      }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "door2",
+      "top": 420,
+      "left": 420,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rpu2",
+      "top": 500,
+      "left": 420,
+      "attrs": {
+        "value": "10000"
+      }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "door3",
+      "top": 420,
+      "left": 510,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rpu3",
+      "top": 500,
+      "left": 510,
+      "attrs": {
+        "value": "10000"
       }
     },
     {
       "type": "wokwi-led",
-      "id": "ledGreen",
-      "top": 500,
-      "left": 300,
+      "id": "led1",
+      "top": 420,
+      "left": -130,
       "attrs": {
         "color": "green"
       }
     },
     {
-      "type": "wokwi-led",
-      "id": "ledRed",
-      "top": 550,
-      "left": 300,
+      "type": "wokwi-resistor",
+      "id": "rl1",
+      "top": 500,
+      "left": -130,
       "attrs": {
-        "color": "red"
+        "value": "220"
       }
     },
     {
-      "type": "wokwi-buzzer",
-      "id": "buzzer",
-      "top": 600,
-      "left": 300,
-      "attrs": {}
+      "type": "wokwi-led",
+      "id": "led2",
+      "top": 420,
+      "left": -40,
+      "attrs": {
+        "color": "green"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rl2",
+      "top": 500,
+      "left": -40,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led3",
+      "top": 420,
+      "left": 50,
+      "attrs": {
+        "color": "green"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rl3",
+      "top": 500,
+      "left": 50,
+      "attrs": {
+        "value": "220"
+      }
     }
   ],
   "connections": [
@@ -72,26 +149,6 @@
       "",
       []
     ],
-
-    [
-      "servo:PWM",
-      "esp:D2",
-      "green",
-      []
-    ],
-    [
-      "servo:V+",
-      "esp:VIN",
-      "red",
-      []
-    ],
-    [
-      "servo:GND",
-      "esp:GND.1",
-      "black",
-      []
-    ],
-
     [
       "keypad:R1",
       "esp:D13",
@@ -140,85 +197,195 @@
       "orange",
       []
     ],
-
     [
-      "rfid:SDA",
+      "tft:MOSI",
+      "esp:D23",
+      "purple",
+      []
+    ],
+    [
+      "tft:SCK",
+      "esp:D18",
+      "purple",
+      []
+    ],
+    [
+      "tft:CS",
       "esp:D5",
       "purple",
       []
     ],
     [
-      "rfid:SCK",
-      "esp:D18",
-      "yellow",
+      "tft:D/C",
+      "esp:D2",
+      "purple",
       []
     ],
     [
-      "rfid:MOSI",
-      "esp:D23",
-      "orange",
-      []
-    ],
-    [
-      "rfid:MISO",
-      "esp:D19",
-      "blue",
-      []
-    ],
-    [
-      "rfid:RST",
+      "tft:RST",
       "esp:D4",
-      "green",
+      "purple",
       []
     ],
     [
-      "rfid:3.3V",
+      "tft:LED",
+      "esp:D15",
+      "purple",
+      []
+    ],
+    [
+      "tft:VCC",
       "esp:3V3",
       "red",
       []
     ],
     [
-      "rfid:GND",
+      "tft:GND",
       "esp:GND.1",
       "black",
       []
     ],
-
     [
-      "ledGreen:A",
-      "esp:D21",
-      "green",
-      []
-    ],
-    [
-      "ledGreen:C",
-      "esp:GND.2",
-      "black",
-      []
-    ],
-
-    [
-      "ledRed:A",
-      "esp:D22",
+      "pot:VCC",
+      "esp:3V3",
       "red",
       []
     ],
     [
-      "ledRed:C",
+      "pot:GND",
       "esp:GND.2",
       "black",
       []
     ],
-
     [
-      "buzzer:1",
-      "esp:D15",
-      "orange",
+      "pot:SIG",
+      "esp:D35",
+      "yellow",
       []
     ],
     [
-      "buzzer:2",
+      "door1:2",
+      "esp:D34",
+      "green",
+      []
+    ],
+    [
+      "door1:1",
       "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "rpu1:1",
+      "esp:3V3",
+      "red",
+      []
+    ],
+    [
+      "rpu1:2",
+      "esp:D34",
+      "green",
+      []
+    ],
+    [
+      "door2:2",
+      "esp:VP",
+      "green",
+      []
+    ],
+    [
+      "door2:1",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "rpu2:1",
+      "esp:3V3",
+      "red",
+      []
+    ],
+    [
+      "rpu2:2",
+      "esp:VP",
+      "green",
+      []
+    ],
+    [
+      "door3:2",
+      "esp:VN",
+      "green",
+      []
+    ],
+    [
+      "door3:1",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "rpu3:1",
+      "esp:3V3",
+      "red",
+      []
+    ],
+    [
+      "rpu3:2",
+      "esp:VN",
+      "green",
+      []
+    ],
+    [
+      "esp:D21",
+      "rl1:1",
+      "green",
+      []
+    ],
+    [
+      "rl1:2",
+      "led1:A",
+      "green",
+      []
+    ],
+    [
+      "led1:C",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "esp:D22",
+      "rl2:1",
+      "green",
+      []
+    ],
+    [
+      "rl2:2",
+      "led2:A",
+      "green",
+      []
+    ],
+    [
+      "led2:C",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "esp:D19",
+      "rl3:1",
+      "green",
+      []
+    ],
+    [
+      "rl3:2",
+      "led3:A",
+      "green",
+      []
+    ],
+    [
+      "led3:C",
+      "esp:GND.1",
       "black",
       []
     ]

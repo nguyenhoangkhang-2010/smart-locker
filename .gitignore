@@ -13,3 +13,8 @@ backend/data/
 cam/.pio/
 cam/include/cam_config.h
 include/secrets.h
+keys/
+include/certs.h
+infra/certs/
+infra/.env
+*.bak-before-demo

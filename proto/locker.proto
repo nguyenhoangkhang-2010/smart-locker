@@ -1,0 +1,33 @@
+// Hợp đồng dữ liệu tủ <-> cloud (Đề tài 67, Câu 2B.1). Nguồn duy nhất cho cả
+// firmware (nanopb) và backend (protobuf Python): sửa ở đây rồi sinh lại.
+syntax = "proto3";
+package locker;
+
+enum EventType {
+  EV_UNKNOWN  = 0;
+  DEPOSIT     = 1;   // gửi hàng xong (cửa đóng lại sau khi bỏ hàng)
+  PICKUP      = 2;   // lấy hàng xong
+  DOOR_OPEN   = 3;
+  DOOR_CLOSE  = 4;
+  TAMPER      = 5;   // cửa mở mà không có lệnh mở hợp lệ
+  HEARTBEAT   = 6;
+  // Mở rộng so với đề: ghi nhận khóa ngăn do nhập sai OTP (Câu 2C.2 "Chống lạm dụng")
+  OTP_LOCKOUT = 7;
+}
+
+message LockerEvent {
+  uint32    seq         = 1;  // tăng đơn điệu, lưu trong NVS -> chống trùng khi sync
+  fixed32   ts          = 2;  // epoch giây (NTP / thời gian mạng 4G); 0 = chưa có giờ
+  EventType type        = 3;
+  uint32    compartment = 4;
+  string    parcel_id   = 5;
+  bool      door_closed = 6;
+  sint32    temp_c10    = 7;  // nhiệt độ x10, tránh float
+  uint32    battery_mv  = 8;
+  sint32    rssi_dbm    = 9;  // sint32 mã hóa zigzag, số âm vẫn gọn
+}
+
+message Batch {
+  string device_id = 1;
+  repeated LockerEvent events = 2;
+}
