@@ -57,6 +57,11 @@ class Settings:
     # Cổng SMS/Zalo OA: POST JSON {"to","text"} tới URL này (kèm Bearer token). Để trống = bản thử: tin nằm
     # trong bảng sms_outbox để xem trên dashboard. Zalo OA/nhà mạng SMS thật đi qua một adapter nhỏ có cùng giao diện.
     sms_gateway_url = os.getenv("SMS_GATEWAY_URL", "")
+    # Tự đăng ký: mã xác thực số điện thoại đi qua cùng cổng SMS. Khi CHƯA có cổng SMS thật thì không có đường nào đưa mã tới
+    # người đăng ký, nên bản thử trả mã ngay trong phản hồi (demo). Có cổng thật thì mặc định KHÔNG trả; đặt REGISTER_SHOW_CODE=true để ép.
+    register_code_ttl = 600
+    register_max_tries = 5
+    register_show_code = _bool("REGISTER_SHOW_CODE", not os.getenv("SMS_GATEWAY_URL", ""))
     sms_gateway_token = os.getenv("SMS_GATEWAY_TOKEN", "")
     sms_max_attempts = int(os.getenv("SMS_MAX_ATTEMPTS", "5"))
 

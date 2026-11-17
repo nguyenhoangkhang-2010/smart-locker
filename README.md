@@ -68,7 +68,7 @@ Hướng dẫn demo từng chức năng, từng bước: [docs/HUONG_DAN_DEMO.md
 
 ```powershell
 cd backend
-.venv\Scripts\python.exe -m pytest tests -q                 # 151 test: backend, RBAC, đầu cuối, chứng chỉ, power budget, phần mở rộng
+.venv\Scripts\python.exe -m pytest tests -q                 # 169 test: backend, RBAC, đầu cuối, chứng chỉ, power budget, phần mở rộng
 cd ..
 ~\.platformio\penv\Scripts\pio.exe test -e native           # 77 test lõi firmware C++ ngay trên máy
 ~\.platformio\penv\Scripts\pio.exe run -e esp32dev          # biên dịch firmware ESP32

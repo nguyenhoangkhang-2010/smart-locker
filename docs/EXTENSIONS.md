@@ -107,3 +107,22 @@ Serial Monitor `fp 3` + Enter (vân tay hợp lệ ô 3) hoặc `fp x` + Enter (
 **Giới hạn:** (1) driver `EspFingerprint` (Adafruit Fingerprint) **chỉ biên dịch được, chưa chạy** vì không có cảm biến; logic UI/khóa/sự kiện
 đã test bằng cảm biến giả. (2) ESP32 DevKit hết GPIO rảnh: cấu hình mẫu dùng chung UART2 (chân 16/17) với module 4G, thực tế cần chân riêng hoặc
 bridge I2C-UART. (3) Wokwi không có cảm biến vân tay nên không demo được ở đó. (4) Không có liveness cho vân tay giả (cảm biến quang rẻ tiền dễ bị đánh lừa).
+
+## 5. Đăng ký và duyệt tài khoản
+
+Ngoài đề (đề chỉ nêu bốn vai trò). Trước đây tài khoản chỉ tạo bằng dòng lệnh (`create-user`) hoặc dữ liệu mẫu; nay có đăng ký và duyệt:
+
+| Ai | Cách có tài khoản | Hiệu lực |
+|---|---|---|
+| CUSTOMER (người nhận) | Tự đăng ký + xác thực số điện thoại | Dùng ngay |
+| SHIPPER | Tự đăng ký + xác thực số điện thoại, rồi chờ ADMIN duyệt; hoặc ADMIN tạo | Sau khi duyệt (tạo trực tiếp thì ngay) |
+| OPERATOR, ADMIN | Chỉ ADMIN tạo | Ngay |
+
+- `POST /auth/register` `{phone, password, account_type: "CUSTOMER"|"SHIPPER", name?}`: kiểm tra SĐT (10 chữ số bắt đầu bằng 0), mật khẩu (từ 8 ký tự, khác SĐT), SĐT chưa có tài khoản; giới hạn 5 lần xin mã/10 phút cho mỗi số; lưu đăng ký chờ trong KV (băm mật khẩu bằng argon2id, băm mã) rồi gửi mã 6 số qua `sms_outbox`. **Không** tạo tài khoản ở bước này. Người đăng ký không chọn được vai trò: `account_type` khác hai giá trị trên bị từ chối (422), trường thừa bị bỏ qua.
+- `POST /auth/verify-phone` `{phone, code}`: mã đúng thì tạo tài khoản (CUSTOMER, hoặc vai trò `PENDING_SHIPPER` không có quyền nào). Mã hết hạn sau 10 phút, dùng một lần, sai 5 lần thì phải đăng ký lại.
+- ADMIN: `GET /users/pending`, `POST /users/{id}/approve` (PENDING_SHIPPER thành SHIPPER), `POST /users/{id}/reject` (khóa tài khoản), và `POST /users` tạo trực tiếp (vai trò hợp lệ, SĐT 10 chữ số). Chỉ duyệt được tài khoản đang ở `PENDING_SHIPPER`: không thể dùng để thăng vai trò người khác.
+- Dashboard: tab **Đăng ký** ở màn hình đăng nhập; thẻ **Tạo tài khoản** và **Shipper chờ duyệt** cho ADMIN.
+- `REGISTER_SHOW_CODE`: khi **chưa có** cổng SMS (`SMS_GATEWAY_URL` trống) mặc định `true`, phản hồi trả luôn mã để demo; khi có cổng thật mặc định `false`. **Đừng bật trên hệ thống thật**: mã phải đến người đăng ký qua tin nhắn.
+- Test: `backend/tests/test_registration.py` (18 test, đã phá thử 9 lỗi cố ý như cho chọn vai trò ADMIN, bỏ kiểm tra SĐT, shipper có quyền ngay, không giới hạn số lần đoán mã).
+
+**Giới hạn:** xác thực số điện thoại hiện chỉ có ý nghĩa khi có nhà cung cấp SMS thật; ở chế độ thử, ai cũng đăng ký được bằng số bất kỳ. Phản hồi 409 "đã đăng ký" cho biết một số đã có tài khoản (có thể dò số). Chưa có quên mật khẩu, đổi mật khẩu hay đăng xuất phía server.

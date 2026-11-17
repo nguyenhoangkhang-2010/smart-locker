@@ -189,11 +189,15 @@
   .login-panel h1 { margin: 0; font: 700 30px/1.1 var(--head-font); letter-spacing: .02em; text-transform: uppercase; }
   .login-panel h1::after { content: ""; display: block; width: 44px; height: 5px; background: var(--brand); margin-top: 10px; border-radius: 1px; }
   .login-panel label { display: grid; gap: 6px; font: 700 11px/1 var(--head-font); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); }
-  .login-panel input { font: 500 15px system-ui, sans-serif; letter-spacing: normal; text-transform: none; padding: 11px 12px; border-radius: 6px; border: 1.5px solid var(--axis); background: var(--surface); }
-  .login-panel input:focus { border-color: var(--ink); box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 55%, transparent); outline: none; }
+  .login-panel input, .login-panel select { font: 500 15px system-ui, sans-serif; letter-spacing: normal; text-transform: none; padding: 11px 12px; border-radius: 6px; border: 1.5px solid var(--axis); background: var(--surface); }
+  .login-panel input:focus, .login-panel select:focus { border-color: var(--ink); box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 55%, transparent); outline: none; }
   .pw { display: grid; grid-template-columns: 1fr auto; gap: 6px; } .pw .btn { padding: 0 12px; font-size: 12px; font-weight: 600; border: 1.5px solid var(--axis); background: var(--surface); color: var(--ink-2); }
   .login-panel .btn.primary { padding: 12px; font-size: 15px; display: flex; justify-content: center; gap: 8px; align-items: center; }
   .login-panel .err { color: var(--critical); min-height: 1.4em; font-weight: 600; }
+  .login-panel a { color: var(--ink); font-weight: 700; }
+  .login-panel .hint { margin: 0; color: var(--ink-2); font-size: 13px; line-height: 1.5; }
+  .pending-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--axis); }
+  .pending-row .actions { display: flex; gap: 6px; }
   .roles { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; color: var(--muted); font-size: 12px; }
   @media (max-width: 900px) { #login { grid-template-columns: 1fr; } .login-art { padding: 22px 20px; } .wall { max-width: 300px; } .art-copy h2 { font-size: 28px; } .login-panel { padding: 24px 16px 40px; }
     .kpis { grid-template-columns: repeat(2, 1fr); } .row2, .row3 { grid-template-columns: 1fr; } .comps { grid-template-columns: repeat(3, 1fr); } .brand-sub { display: none; } }
@@ -217,6 +221,25 @@
       <button class="btn primary" type="submit">Đăng nhập <span aria-hidden="true">→</span></button>
       <div class="err" id="login-error" role="alert"></div>
       <div class="roles">Dành cho <span class="badge b-violet">Vận hành</span><span class="badge b-blue">Shipper</span><span class="badge b-green">Người nhận</span></div>
+      <div class="roles">Chưa có tài khoản? <a href="#" id="to-register">Đăng ký</a></div>
+    </form>
+    <form id="reg-form" hidden>
+      <h1>Đăng ký</h1>
+      <label>Bạn là<select id="reg-type"><option value="CUSTOMER">Người nhận hàng</option><option value="SHIPPER">Shipper (cần quản trị viên duyệt)</option></select></label>
+      <label>Họ tên<input id="reg-name" autocomplete="name" maxlength="60" placeholder="Nguyễn Văn A"></label>
+      <label>Số điện thoại<input id="reg-phone" inputmode="tel" autocomplete="username" placeholder="10 chữ số, bắt đầu bằng 0" pattern="0[0-9]{9}" required></label>
+      <label>Mật khẩu (ít nhất 8 ký tự)<input id="reg-password" type="password" autocomplete="new-password" minlength="8" required></label>
+      <button class="btn primary" type="submit">Gửi mã xác thực <span aria-hidden="true">→</span></button>
+      <div class="err" id="reg-error" role="alert"></div>
+      <div class="roles">Đã có tài khoản? <a href="#" id="to-login">Đăng nhập</a></div>
+    </form>
+    <form id="ver-form" hidden>
+      <h1>Xác thực số điện thoại</h1>
+      <p class="hint" id="ver-info"></p>
+      <label>Mã 6 số<input id="ver-code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required></label>
+      <button class="btn primary" type="submit">Xác nhận <span aria-hidden="true">→</span></button>
+      <div class="err" id="ver-error" role="alert"></div>
+      <div class="roles"><a href="#" id="ver-back">← Quay lại</a></div>
     </form>
   </div>
 </section>
@@ -380,6 +403,20 @@
         <div class="head"><div><h2>Tin nhắn OTP</h2><div class="sub">Không đặt SMS_GATEWAY_URL: bản thử, mã hiện ở đây. Có cổng thật: gửi xong mã bị che</div></div></div>
         <div class="scroll list" id="sms"></div>
       </div>
+      <div class="card" id="users-card" hidden>
+        <div class="head"><div><h2>Tạo tài khoản</h2><div class="sub">Có hiệu lực ngay, không cần duyệt. Dùng cho vận hành, quản trị hoặc shipper bạn đã biết</div></div></div>
+        <form class="form" id="user-form">
+          <input id="uf-phone" placeholder="SĐT (10 chữ số)" inputmode="tel" pattern="0[0-9]{9}" required>
+          <input id="uf-name" placeholder="Họ tên" maxlength="60">
+          <select id="uf-role" aria-label="Vai trò"><option value="OPERATOR">Vận hành (OPERATOR)</option><option value="SHIPPER">Shipper</option><option value="CUSTOMER">Người nhận (CUSTOMER)</option><option value="ADMIN">Quản trị (ADMIN)</option></select>
+          <input id="uf-pass" type="password" placeholder="Mật khẩu (từ 8 ký tự)" minlength="8" autocomplete="new-password" required>
+          <button class="btn primary wide" type="submit">Tạo tài khoản</button>
+        </form>
+      </div>
+      <div class="card" id="pending-card" hidden>
+        <div class="head"><div><h2>Shipper chờ duyệt</h2><div class="sub">Shipper tự đăng ký chưa dùng được cho tới khi bạn duyệt</div></div><button class="btn" id="pending-reload">Tải lại</button></div>
+        <div class="list" id="pending"></div>
+      </div>
     </section>
   </main>
 </div>
@@ -440,7 +477,7 @@ async function api(path, opts = {}, retry = true) {
   if (!res.ok) { const e = new Error(path + " " + res.status); e.status = res.status; e.body = await res.json().catch(() => ({})); throw e; }
   return res.json();
 }
-function showLogin() { stopCam(); stopLive(); $("#app").hidden = true; $("#my").hidden = true; $("#login").hidden = false; state.access = state.refresh = null; state.view = null; try { $("#phone").focus(); } catch (e) { /* chưa hiển thị */ } }
+function showLogin() { showAuthForm("#login-form"); stopCam(); stopLive(); $("#app").hidden = true; $("#my").hidden = true; $("#login").hidden = false; state.access = state.refresh = null; state.view = null; try { $("#phone").focus(); } catch (e) { /* chưa hiển thị */ } }
 function toast(msg) { const t = h("div", { class: "toast", role: "status" }, msg); document.body.append(t); setTimeout(() => t.remove(), 3500); }
 
 $("#login-form").addEventListener("submit", async (e) => {
@@ -452,9 +489,79 @@ $("#login-form").addEventListener("submit", async (e) => {
   setTokens(await res.json());
   $("#password").value = "";
   if (can("dashboard:view")) startOps(); else if (can("parcel:deposit") || can("parcel:pickup")) startMy();
-  else { $("#login-error").textContent = "Tài khoản này chưa được cấp quyền nào."; showLogin(); }
+  else {
+    $("#login-error").textContent = state.claims && state.claims.role === "PENDING_SHIPPER"
+      ? "Tài khoản shipper đang chờ quản trị viên duyệt. Hãy đăng nhập lại sau khi được duyệt."
+      : "Tài khoản này chưa được cấp quyền nào.";
+    showLogin();
+  }
 });
 $("#logout").addEventListener("click", showLogin);
+
+/* ---------- đăng ký tài khoản (người nhận tự dùng ngay; shipper chờ ADMIN duyệt) ---------- */
+function showAuthForm(id) { for (const f of ["#login-form", "#reg-form", "#ver-form"]) $(f).hidden = f !== id; }
+const postJson = async (url, body) => { const r = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }); return { ok: r.ok, status: r.status, data: await r.json().catch(() => ({})) }; };
+let regPending = null;
+function registerError(status, detail) {
+  const text = typeof detail === "string" ? detail : "";
+  if (status === 409) return "Số điện thoại này đã có tài khoản. Hãy đăng nhập.";
+  if (status === 429) return "Bạn xin mã quá nhiều lần, thử lại sau 10 phút.";
+  if (status === 422 && text.includes("phone must")) return "Số điện thoại phải gồm 10 chữ số và bắt đầu bằng 0.";
+  if (status === 422 && text.includes("password")) return "Mật khẩu ít nhất 8 ký tự và không được trùng số điện thoại.";
+  return "Không đăng ký được, kiểm tra lại thông tin.";
+}
+$("#to-register").addEventListener("click", (e) => { e.preventDefault(); $("#login-error").textContent = ""; showAuthForm("#reg-form"); $("#reg-phone").focus(); });
+$("#to-login").addEventListener("click", (e) => { e.preventDefault(); showAuthForm("#login-form"); $("#phone").focus(); });
+$("#ver-back").addEventListener("click", (e) => { e.preventDefault(); showAuthForm("#reg-form"); });
+$("#reg-form").addEventListener("submit", async (e) => {
+  e.preventDefault(); $("#reg-error").textContent = "";
+  const body = { phone: $("#reg-phone").value.trim(), password: $("#reg-password").value, account_type: $("#reg-type").value, name: $("#reg-name").value };
+  const res = await postJson("/auth/register", body);
+  if (!res.ok) { $("#reg-error").textContent = registerError(res.status, res.data.detail); return; }
+  regPending = { phone: body.phone, password: body.password, type: body.account_type };
+  $("#ver-info").textContent = res.data.demo_code
+    ? `Chế độ thử (chưa có cổng SMS thật): mã xác thực của bạn là ${res.data.demo_code}. Có hiệu lực ${Math.round(res.data.expires_in / 60)} phút.`
+    : `Mã 6 số đã được gửi tới ${body.phone}. Có hiệu lực ${Math.round(res.data.expires_in / 60)} phút.`;
+  $("#ver-code").value = ""; showAuthForm("#ver-form"); $("#ver-code").focus();
+});
+$("#ver-form").addEventListener("submit", async (e) => {
+  e.preventDefault(); $("#ver-error").textContent = "";
+  if (!regPending) { showAuthForm("#reg-form"); return; }
+  const res = await postJson("/auth/verify-phone", { phone: regPending.phone, code: $("#ver-code").value });
+  if (!res.ok) {
+    const d = res.data.detail || {};
+    if (d.error === "WRONG_CODE") $("#ver-error").textContent = `Sai mã, còn ${d.left} lần thử.`;
+    else { $("#reg-error").textContent = d.error === "TOO_MANY_TRIES" ? "Nhập sai quá nhiều lần, hãy đăng ký lại." : "Mã đã hết hạn, hãy đăng ký lại."; showAuthForm("#reg-form"); }
+    return;
+  }
+  $("#phone").value = regPending.phone; $("#password").value = regPending.password;     // đăng nhập luôn
+  regPending = null; $("#reg-password").value = ""; $("#ver-code").value = "";
+  showAuthForm("#login-form"); $("#login-form").requestSubmit();
+});
+
+/* ---------- ADMIN: tạo tài khoản và duyệt shipper ---------- */
+async function loadPending() {
+  try {
+    const list = await api("/users/pending");
+    $("#pending").replaceChildren(...(list.length ? list.map((u) => h("div", { class: "pending-row" },
+      h("span", {}, `${u.phone}${u.name ? " · " + u.name : ""}`),
+      h("span", { class: "actions" },
+        h("button", { class: "btn primary", onclick: () => decideUser(u, "approve") }, "Duyệt"),
+        h("button", { class: "btn danger", onclick: () => decideUser(u, "reject") }, "Từ chối")))) : [h("div", { class: "empty" }, "Không có shipper nào đang chờ duyệt")]));
+  } catch (e) { /* lỗi 401 đã được xử lý trong api() */ }
+}
+async function decideUser(u, action) {
+  if (action === "reject" && !confirm(`Từ chối shipper ${u.phone}? Họ sẽ không đăng nhập được nữa.`)) return;
+  try { await api(`/users/${encodeURIComponent(u.user_id)}/${action}`, { method: "POST" }); toast(action === "approve" ? `Đã duyệt shipper ${u.phone}` : `Đã từ chối ${u.phone}`); loadPending(); }
+  catch (err) { toast("Không xử lý được (có thể đã có người xử lý trước)"); loadPending(); }
+}
+$("#pending-reload").addEventListener("click", loadPending);
+$("#user-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const body = { phone: $("#uf-phone").value.trim(), name: $("#uf-name").value || null, role: $("#uf-role").value, password: $("#uf-pass").value };
+  try { await api("/users", { method: "POST", body: JSON.stringify(body) }); toast(`Đã tạo tài khoản ${body.role} ${body.phone}`); e.target.reset(); }
+  catch (err) { toast(err.status === 409 ? "Số điện thoại này đã có tài khoản" : err.status === 422 ? "Thông tin chưa hợp lệ (SĐT 10 chữ số, mật khẩu từ 8 ký tự)" : "Không tạo được tài khoản"); }
+});
 $("#pw-toggle").addEventListener("click", (e) => {
   const input = $("#password"), show = input.type === "password";
   input.type = show ? "text" : "password"; e.currentTarget.textContent = show ? "Ẩn" : "Hiện"; e.currentTarget.setAttribute("aria-pressed", String(show));
@@ -662,7 +769,10 @@ function faceError(e) {
   const d = (e.body && e.body.detail) || {};
   const code = typeof d === "object" ? d.error : "";
   if (e.status === 404 && typeof d === "string" && d.includes("disabled")) return "Tính năng khuôn mặt đang tắt (đặt FACE_ENABLED=true trong backend/.env rồi chạy lại backend)";
+  if (e.status === 404 && typeof d === "string" && d.includes("user not found")) return "Không tìm thấy tài khoản với số điện thoại này (kiểm tra lại số, ví dụ 0900000002)";
   if (e.status === 404) return "Bạn chưa được đăng ký khuôn mặt";
+  if (e.status === 422 && typeof d === "string" && d.includes("only for ADMIN and OPERATOR")) return "Chỉ đăng ký khuôn mặt cho tài khoản ADMIN hoặc OPERATOR (dùng 0900000001 hoặc 0900000002)";
+  if (e.status === 422 && typeof d === "string" && d.includes("consent")) return "Cần tick ô đã đồng ý đăng ký sinh trắc";
   if (e.status === 403) return "Không đủ quyền";
   if (e.status === 429) return "Sai quá nhiều lần, thử lại sau 15 phút";
   if (code === "CHALLENGE_EXPIRED") return "Thử thách hết hạn hoặc đã dùng, bấm xác minh lại";
@@ -808,7 +918,7 @@ async function refresh() {
     setChart("rssi", rows, drawRssi, tableOf(["Giờ", "RSSI TB (dBm)"], rows.filter((r) => r.avg_rssi_dbm != null).map((r) => [label(r), r.avg_rssi_dbm])));
     $("#hourly-sub").textContent = state.locker ? `Tủ ${state.locker}` : "Mọi tủ";
     renderAlerts(alerts); renderEvents(events);
-    if (can("admin:manage")) { const sms = await api("/sms-outbox?limit=20"); $("#sms").replaceChildren(sms.length ? tableOf(["Thời gian", "Đến", "Nội dung", "Trạng thái"], sms.map((m) => [dt(m.created_at), m.to_phone, m.body, pill(m.status, SMS_COLOR[m.status])])) : h("div", { class: "empty" }, "Chưa có tin nhắn")); }
+    if (can("admin:manage")) { loadPending(); const sms = await api("/sms-outbox?limit=20"); $("#sms").replaceChildren(sms.length ? tableOf(["Thời gian", "Đến", "Nội dung", "Trạng thái"], sms.map((m) => [dt(m.created_at), m.to_phone, m.body, pill(m.status, SMS_COLOR[m.status])])) : h("div", { class: "empty" }, "Chưa có tin nhắn")); }
     $("#status").className = "status"; $("#status").textContent = `${live.open ? "Trực tiếp · " : ""}cập nhật ${new Date().toLocaleTimeString("vi-VN", { hour12: false })}`;
   } catch (e) { if (e.message !== "401") { $("#status").className = "status error"; $("#status").textContent = "Không kết nối được backend, giữ dữ liệu cũ"; } }
   finally { $("#main").classList.remove("loading"); busy = false; }
@@ -861,7 +971,8 @@ function startOps() {
   $("#login").hidden = true; $("#my").hidden = true; $("#app").hidden = false;
   $("#who").replaceChildren(state.claims.phone, h("span", { class: "role" }, state.claims.role));
   $("#parcel-card").hidden = !can("parcel:deposit"); $("#sms-card").hidden = !can("admin:manage");
-  $("#admin-row").hidden = $("#parcel-card").hidden && $("#sms-card").hidden;
+  $("#users-card").hidden = $("#pending-card").hidden = !can("admin:manage");
+  $("#admin-row").hidden = $("#parcel-card").hidden && $("#sms-card").hidden && $("#users-card").hidden;
   $("#admin-actions").hidden = !can("admin:manage");
   $("#face-enroll").hidden = !can("biometric:manage");
   if (can("parcel:deposit")) api("/lockers/available").then((ls) => $("#pf-locker").replaceChildren(h("option", { value: "" }, "Tủ nào cũng được"), ...ls.map((l) => h("option", { value: l.locker_id }, l.name)))).catch(() => {});

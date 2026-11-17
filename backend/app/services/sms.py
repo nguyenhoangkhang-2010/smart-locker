@@ -23,7 +23,7 @@ from . import alerts
 log = logging.getLogger("sms")
 BATCH = 20
 BASE_BACKOFF_SEC = 30
-OTP_IN_TEXT = re.compile(r"(Ma lay hang: )\d{4,8}")
+OTP_IN_TEXT = re.compile(r"(Ma (?:lay hang|xac thuc): )\d{4,8}")
 
 
 def _mask(body: str) -> str:

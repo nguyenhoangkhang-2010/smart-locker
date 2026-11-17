@@ -22,7 +22,7 @@ cd ..
 ~\.platformio\penv\Scripts\pio.exe run -e esp32dev
 ```
 
-Kết quả mong đợi: **151 passed**, **77 test C++ đạt**, build firmware `SUCCESS`. (Lệnh `pio test` cần g++; nếu thiếu thì cài MinGW/MSYS2.)
+Kết quả mong đợi: **169 passed**, **77 test C++ đạt**, build firmware `SUCCESS`. (Lệnh `pio test` cần g++; nếu thiếu thì cài MinGW/MSYS2.)
 
 Chạy riêng từng nhóm để vừa chạy vừa giải thích cho thầy (`-v` hiện tên từng test):
 
@@ -75,7 +75,7 @@ Dữ liệu mẫu có 2 tủ: `LOCKER-HCM-001` (đang online, 8 ngăn, có hàng
 |---|---|---|
 | ADMIN `…01` | Trung tâm vận hành + OTA, thu hồi tủ, khuôn mặt | Đủ mọi thẻ |
 | OPERATOR `…02` | Trung tâm vận hành, mở khẩn cấp | Không có OTA, thu hồi |
-| SHIPPER `…03` | Ô **Tạo đơn gửi hàng** và **Tin nhắn OTP** | Không thấy dashboard vận hành |
+| SHIPPER `…03` | Chỉ ô **Tạo đơn gửi hàng** (và danh sách đơn do mình tạo) | Không thấy dashboard vận hành |
 | CUSTOMER `…04` | **Đơn của tôi** + lấy hàng bằng OTP | Không thấy đơn người khác |
 
 Thử **khóa đăng nhập**: tạo tài khoản thử rồi nhập sai mật khẩu 5 lần (đừng dùng tài khoản demo chính):
@@ -85,6 +85,21 @@ Thử **khóa đăng nhập**: tạo tài khoản thử rồi nhập sai mật k
 ```
 
 Lần thứ 6 phải bị khóa 15 phút.
+
+### 2.1b Đăng ký tài khoản và duyệt shipper (mới)
+
+Không cần dòng lệnh để có tài khoản nữa:
+
+1. Ở màn hình đăng nhập bấm **Đăng ký**. Chọn **Người nhận hàng** hoặc **Shipper**, nhập họ tên, SĐT **10 chữ số bắt đầu bằng 0** (số thật hay giả đều được) và mật khẩu từ 8 ký tự. Bấm **Gửi mã xác thực**.
+2. Màn hình xác thực hiện mã 6 số ở dòng "Chế độ thử… mã xác thực của bạn là …" (vì chưa có cổng SMS thật, mã được trả thẳng ở chế độ thử; mã cũng nằm trong bảng `sms_outbox`). Nhập sai thì báo còn mấy lần thử; sai 5 lần phải đăng ký lại; mã hết hạn sau 10 phút.
+3. **Người nhận:** xác thực xong tự đăng nhập và dùng được ngay.
+4. **Shipper:** xác thực xong tài khoản ở trạng thái **chờ duyệt**: đăng nhập sẽ thấy thông báo "đang chờ quản trị viên duyệt", chưa tạo được đơn.
+5. ADMIN đăng nhập, kéo xuống thẻ **Shipper chờ duyệt**: bấm **Duyệt** (hoặc **Từ chối**). Shipper đăng nhập lại là thấy ô **Tạo đơn gửi hàng**. Từ chối thì họ không đăng nhập được nữa.
+6. ADMIN cũng có thẻ **Tạo tài khoản** để tạo thẳng OPERATOR, SHIPPER, CUSTOMER, ADMIN (có hiệu lực ngay, không cần duyệt).
+
+Người đăng ký **không chọn được vai trò** ngoài hai loại trên; OPERATOR và ADMIN chỉ do ADMIN tạo. Mọi thao tác duyệt và tự đăng ký được ghi vào `audit_log` (`self_register`, `approve_shipper`, `reject_shipper`, `create_user`).
+
+Muốn đăng ký khuôn mặt cho chính bạn (mục 2.6): nhờ ADMIN tạo (hoặc tự tạo bằng thẻ **Tạo tài khoản**) một tài khoản OPERATOR bằng SĐT của bạn, rồi nhập SĐT đó vào thẻ khuôn mặt.
 
 ### 2.2 Trung tâm vận hành (ADMIN)
 
@@ -103,7 +118,7 @@ Lần thứ 6 phải bị khóa 15 phút.
 ### 2.4 Shipper tạo đơn, người nhận lấy hàng bằng OTP
 
 1. SHIPPER: ô **Tạo đơn gửi hàng**: mã đơn chỉ gồm chữ số (ví dụ `261100000099`), SĐT người nhận `0900000004`, chọn cỡ, chọn tủ `LOCKER-HCM-001`.
-2. ADMIN hoặc SHIPPER: ô **Tin nhắn OTP** (cạnh ô Tạo đơn) hiện mã 6 số của các đơn **đã nằm trong tủ** (dữ liệu mẫu có sẵn đơn chờ lấy cho `0900000004`).
+2. ADMIN: ô **Tin nhắn OTP** (cạnh ô Tạo đơn) hiện mã 6 số của các đơn **đã nằm trong tủ** (dữ liệu mẫu có sẵn đơn chờ lấy cho `0900000004`).
 3. CUSTOMER `…04`: **Lấy hàng bằng mã OTP**, chọn đơn, nhập OTP đúng: báo đã gửi lệnh mở.
 4. Nhập **sai OTP 5 lần** ở cùng một ngăn: báo khóa 15 phút (mã lỗi 423).
 5. Đăng nhập CUSTOMER khác và thử mở đơn không phải của mình: bị từ chối (403).

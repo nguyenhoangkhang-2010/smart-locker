@@ -1,4 +1,5 @@
 """API vận hành: tủ, ngăn, đơn, cảnh báo, thống kê, người dùng (RBAC theo docs/CONTRACT.md mục 10)."""
+import uuid
 from typing import Optional
 
 import psycopg2.errors
@@ -239,6 +240,10 @@ class NewUser(BaseModel):
 def create_user(body: NewUser, user=Depends(security.require("admin:manage"))):
     if len(body.password) < 8:
         raise HTTPException(422, "password must be at least 8 characters")
+    if not re.fullmatch(r"0\d{9}", body.phone):
+        raise HTTPException(422, "phone must be 10 digits starting with 0")
+    if body.role not in ("ADMIN", "OPERATOR", "SHIPPER", "CUSTOMER"):
+        raise HTTPException(422, "role must be ADMIN, OPERATOR, SHIPPER or CUSTOMER")
     try:
         row = query("INSERT INTO users (phone, name, pw_hash, role) VALUES (%s, %s, %s, %s) "
                     "RETURNING user_id", (body.phone, body.name, security.hash_password(body.password),
@@ -249,6 +254,39 @@ def create_user(body: NewUser, user=Depends(security.require("admin:manage"))):
         raise HTTPException(422, "unknown role")
     security.audit(user, "create_user", None, None, f"{body.role}:{body.phone}")
     return {"user_id": str(row["user_id"])}
+
+
+@router.get("/users/pending")
+def pending_users(user=Depends(security.require("admin:manage"))):
+    """Shipper đã tự đăng ký và đang chờ duyệt."""
+    return query("SELECT user_id, phone, name FROM users WHERE role = 'PENDING_SHIPPER' AND active ORDER BY phone")
+
+
+def _pending_or_404(user_id: str) -> str:
+    try:
+        uid = str(uuid.UUID(user_id))
+    except ValueError:
+        raise HTTPException(404, "user not found")
+    rows = query("SELECT phone FROM users WHERE user_id = %s AND role = 'PENDING_SHIPPER' AND active", (uid,))
+    if not rows:
+        raise HTTPException(404, "no pending shipper with this id")
+    return uid
+
+
+@router.post("/users/{user_id}/approve")
+def approve_user(user_id: str, user=Depends(security.require("admin:manage"))):
+    uid = _pending_or_404(user_id)
+    row = query("UPDATE users SET role = 'SHIPPER' WHERE user_id = %s RETURNING phone", (uid,))[0]
+    security.audit(user, "approve_shipper", None, None, row["phone"])
+    return {"approved": row["phone"]}
+
+
+@router.post("/users/{user_id}/reject")
+def reject_user(user_id: str, user=Depends(security.require("admin:manage"))):
+    uid = _pending_or_404(user_id)
+    row = query("UPDATE users SET active = false WHERE user_id = %s RETURNING phone", (uid,))[0]
+    security.audit(user, "reject_shipper", None, None, row["phone"])
+    return {"rejected": row["phone"]}
 
 
 @router.get("/users")
