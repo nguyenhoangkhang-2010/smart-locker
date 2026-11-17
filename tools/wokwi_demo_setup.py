@@ -82,9 +82,14 @@ def main() -> None:
     secrets_text = set_define(secrets_text, "SECRET_MQTT_TLS", "0")
     # Demo: không ngủ sâu, nếu không sau 30 giây tủ ngủ và backend thấy tủ "offline" suốt buổi thử
     secrets_text = set_define(secrets_text, "SECRET_DEEP_SLEEP", "0")
+    # Wokwi/broker công cộng hay cắt kết nối rảnh sau ~20 s (log: errno=128 lặp lại): ping dày hơn để giữ kết nối
+    secrets_text = set_define(secrets_text, "SECRET_MQTT_KEEPALIVE", "10")
+    # Vân tay ảo qua Serial Monitor để demo mở bảo trì mà không cần cảm biến (docs/EXTENSIONS.md)
+    secrets_text = set_define(secrets_text, "SECRET_FINGERPRINT_SIM", "1")
     # Sơ đồ Wokwi 8 ngăn (tools/make_wokwi_diagram.py): khóa qua 74HC595, cửa qua 74HC165 thay cho PCF8574 (Wokwi không có).
     # Firmware và backend phải cùng số ngăn và cỡ, nếu không tủ offline có thể chọn ngăn mà cloud không có.
     secrets_text = set_define(secrets_text, "SECRET_SHIFT_IO", "1")
+    secrets_text = set_define(secrets_text, "SECRET_PULSE_MS", "2000")      # LED sáng 2 s để kịp nhìn (đề: 0,3-1 s cho solenoid thật)
     secrets_text = set_define(secrets_text, "SECRET_NUM_COMPARTMENTS", "8")
     secrets_text = set_define(secrets_text, "SECRET_COMP_SIZES", '"SSSMMMLL"')
     secrets_text = set_define(secrets_text, "SECRET_DEVICE_ID", f'"{device_id}"')

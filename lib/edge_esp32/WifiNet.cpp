@@ -22,7 +22,7 @@ void WifiNet::tryConnect() {
     if (net_.wifiChannel > 0) WiFi.begin(net_.wifiSsid, net_.wifiPassword, net_.wifiChannel);
     else WiFi.begin(net_.wifiSsid, net_.wifiPassword);
   }
-  mqtt_.ensureStarted();                           // esp-mqtt tự nối lại khi Wi-Fi lên
+  if (WiFi.status() == WL_CONNECTED) mqtt_.ensureStarted();   // chưa có Wi-Fi thì chưa phân giải được tên broker; service() sẽ khởi động khi Wi-Fi lên
 }
 
 void WifiNet::sleepRadio() {
@@ -38,6 +38,7 @@ void WifiNet::service() {
     Serial.println(up ? "[WIFI] da ket noi" : "[WIFI] mat ket noi");
     wifiWasUp_ = up;
   }
+  if (up && attempting_) mqtt_.ensureStarted();    // Wi-Fi vừa lên: bắt đầu MQTT (esp-mqtt tự nối lại khi rớt)
   if (!ntpStarted_ && WiFi.status() == WL_CONNECTED) {
     configTime(net_.gmtOffsetSec, 0, net_.ntpServer);   // chạy ngầm; EspClock::epoch() = 0 tới khi có giờ
     ntpStarted_ = true;

@@ -56,6 +56,14 @@ struct Hal {
   virtual void display(bool on) { (void)on; }   // bật/tắt đèn nền TFT (ngủ sâu tắt đèn nền)
 };
 
+// Cảm biến vân tay (PHẦN MỞ RỘNG, ngoài đề): module như R503 tự giữ mẫu vân tay bên trong và tự khớp,
+// nên firmware chỉ nhận về số ô mẫu khớp, không bao giờ thấy dữ liệu vân tay.
+struct Fingerprint {
+  virtual ~Fingerprint() {}
+  // 0 = chưa có ngón tay đặt vào; > 0 = ô mẫu khớp (nhân viên đã đăng ký); -1 = có ngón tay nhưng không khớp ai.
+  virtual int identify() = 0;
+};
+
 // Yêu cầu của tủ gửi cloud (RPC phía tủ, docs/CONTRACT.md mục 6). Trả lời đến qua Locker::onCloud*().
 struct Cloud {
   virtual ~Cloud() {}

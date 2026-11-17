@@ -5,6 +5,7 @@
 #include <driver/rtc_io.h>
 #include <esp_sleep.h>
 
+#include "EspFingerprint.h"
 #include "EspHal.h"
 #include "EspPlatform.h"
 #include "MatrixKeypad.h"
@@ -28,6 +29,12 @@ static const OtpConfig OTP;
 static const DoorConfig DOOR;
 static const UiConfig UI;
 static const PowerConfig POWER;
+#if SECRET_FINGERPRINT
+static EspFingerprint fingerprint;
+#endif
+#if SECRET_FINGERPRINT_SIM
+static SerialFingerprint fingerprintSim;
+#endif
 
 static EspClock espClock;
 static EspRng espRng;
@@ -142,6 +149,7 @@ void setup() {
   if (!storage.begin()) Serial.println("LittleFS: khong gan duoc, du lieu se mat khi mat dien");
   keypad.releaseAfterWake();                     // nhả giữ chân RTC nếu vừa ngủ dậy
   hal.begin();
+  hal.selfTest();
   keypad.begin();       // sau khi khởi động xong: GPIO 12 phải ở mức thấp lúc boot
   net.begin();
 
@@ -149,6 +157,15 @@ void setup() {
   if (restored) Serial.printf("Khoi phuc %u su kien chua gui tu bo nho ben\n", (unsigned)restored);
 
   mqtt.attach(&locker, &syncMgr);
+  locker.setSeqStart(esp_random() & 0x00FFFFFF);   // chỉ dùng khi chưa có seq lưu (flash mới, Wokwi không giữ flash): tránh seq quay về 1 bị cloud coi là trùng
+#if SECRET_FINGERPRINT_SIM
+  locker.setFingerprint(&fingerprintSim);
+  Serial.println("[FP-SIM] van tay ao: bam D tren keypad, roi go vao Serial Monitor: fp 3 (nhan vien) hoac fp x (ngon la)");
+#endif
+#if SECRET_FINGERPRINT
+  if (fingerprint.begin(HW.fingerprintRx, HW.fingerprintTx)) locker.setFingerprint(&fingerprint);
+  else Serial.println("[FP] khong thay cam bien van tay: phim D se bao 'Chua co van tay'");
+#endif
   locker.begin(wake);
   power.begin(millis());
 }

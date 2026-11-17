@@ -28,7 +28,10 @@ class NvsStorage : public edge::Storage {
 // Mỗi khóa là một file /<key>.bin. Ghi vào file tạm rồi đổi tên, để rút điện giữa chừng không làm hỏng bản cũ.
 class LittleFsStorage : public edge::Storage {
  public:
-  bool begin();                                   // gắn LittleFS (tự định dạng lần đầu)
+  bool begin();                                   // gắn LittleFS (tự định dạng lần đầu); false = không có phân vùng (Wokwi)
+  bool mounted() const { return mounted_; }
   bool save(const char* key, const void* data, size_t len) override;
   size_t load(const char* key, void* out, size_t cap) override;
+ private:
+  bool mounted_ = false;
 };

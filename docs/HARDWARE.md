@@ -49,7 +49,7 @@ nối tiếp tiếp điểm reed của cả 8 ngăn (đóng khi mọi cửa đó
 |---|---|---|
 | Keypad hàng R1–R4 | GPIO 13, 12, 14, 27 | Output khi quét. **GPIO 12 phải ở mức thấp lúc boot** (strapping điện áp flash) |
 | Keypad cột C1–C4 | GPIO 26, 25, 33, 32 | Input pull-up; RTC GPIO nên dùng làm nguồn EXT1 |
-| TFT ILI9341 (SPI VSPI) | MOSI 23, SCK 18, CS 5, DC 2, RST 4, LED 15 | Đèn nền ~60 mA, tắt trước khi ngủ |
+| TFT ILI9341 (SPI VSPI) | MOSI 23, SCK 18, CS 5, DC 2, RST 4, LED 15 | Đèn nền ~60 mA, tắt trước khi ngủ. TFT không có dây MISO: firmware trỏ MISO sang GPIO 39 (chỉ vào) vì mặc định SPI chiếm **GPIO 19** làm MISO, mà 19 là chân PWRKEY của 4G (và STCP của bản mô phỏng) |
 | PCF8574 → 8 kênh khóa | SDA 21, SCL 22, địa chỉ 0x20 | Mỗi chân ra đi vào LED của PC817. Bản mô phỏng dùng GPIO 21/22/19 trực tiếp |
 | Reed tổng | GPIO 34 | Input-only, RTC GPIO, đánh thức EXT0 khi cửa bị mở trái phép; cần điện trở kéo lên ngoài |
 | Đo điện áp pin | GPIO 35 (ADC1) | Cầu phân áp 100k/22k (`batteryDividerRatio`), lọc median rồi EMA |

@@ -65,19 +65,19 @@ bool OtpTable::verify(uint8_t comp, const char* code, uint32_t nowEpoch) const {
 
 // ---------------- LockoutTracker ----------------
 
-LockoutTracker::LockoutTracker(Storage* store, uint8_t maxWrong, uint16_t lockMinutes)
-    : store_(store), maxWrong_(maxWrong), lockMs_(uint32_t(lockMinutes) * 60000UL) {
+LockoutTracker::LockoutTracker(Storage* store, uint8_t maxWrong, uint16_t lockMinutes, const char* key)
+    : store_(store), key_(key), maxWrong_(maxWrong), lockMs_(uint32_t(lockMinutes) * 60000UL) {
   memset(s_, 0, sizeof(s_));
 }
 
 void LockoutTracker::persist() {
-  if (store_) store_->save("lock", s_, sizeof(s_));
+  if (store_) store_->save(key_, s_, sizeof(s_));
 }
 
 size_t LockoutTracker::load() {
   if (!store_) return 0;
   Slot tmp[MAX_COMP + 1];
-  if (store_->load("lock", tmp, sizeof(tmp)) != sizeof(tmp)) return 0;
+  if (store_->load(key_, tmp, sizeof(tmp)) != sizeof(tmp)) return 0;
   memcpy(s_, tmp, sizeof(s_));
   // untilMs là thời gian từ lúc khởi động LẦN TRƯỚC, vô nghĩa sau khi khởi động lại.
   // Chỉ khóa theo giờ thật (epoch) mới sống sót qua việc rút điện; không có giờ thì mở khóa.

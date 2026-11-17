@@ -42,7 +42,7 @@ void MqttLink::ensureStarted() {
     cfg.credentials.authentication.key = CLIENT_KEY_PEM;
   }
   cfg.credentials.client_id = net_.deviceId;
-  cfg.session.keepalive = 30;
+  cfg.session.keepalive = net_.keepaliveSec;
   cfg.session.last_will.topic = lwtTopic_;
   cfg.session.last_will.msg = "{\"online\":false}";
   cfg.session.last_will.qos = 1;
@@ -58,7 +58,7 @@ void MqttLink::ensureStarted() {
     cfg.client_key_pem = CLIENT_KEY_PEM;
   }
   cfg.client_id = net_.deviceId;
-  cfg.keepalive = 30;
+  cfg.keepalive = net_.keepaliveSec;
   cfg.lwt_topic = lwtTopic_;
   cfg.lwt_msg = "{\"online\":false}";
   cfg.lwt_qos = 1;
@@ -158,6 +158,7 @@ void MqttLink::handleRpcRequest(const char* rid, const char* payload) {
   if (deserializeJson(doc, payload) || !locker_ || !sync_) { respond(rid, "{\"ok\":false,\"error\":\"BAD_REQUEST\"}"); return; }
   const char* method = doc["method"] | "";
   JsonObject p = doc["params"];
+  Serial.printf("[RPC] %s\n", method);
 
   if (strcmp(method, "open") == 0) {
     int comp = p["comp"] | 0;

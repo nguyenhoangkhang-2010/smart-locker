@@ -40,6 +40,13 @@ def database():
 
 
 @pytest.fixture(autouse=True)
+def default_flags(monkeypatch):
+    """Test không phụ thuộc backend/.env của người chạy: các tính năng mở rộng luôn bắt đầu ở trạng thái tắt."""
+    for name in ("face_enabled", "face_required_for_remote_open", "anomaly_enabled"):
+        monkeypatch.setattr(settings, name, False)
+
+
+@pytest.fixture(autouse=True)
 def clean_tables(database):
     db.query(
         "TRUNCATE locker_events, event_seen, alerts, audit_log, sms_outbox, door_state, "

@@ -12,6 +12,7 @@ Locker::Locker(const LockerConfig& cfg, Clock& clock, Hal& hal, Cloud& cloud, St
                PriorityRing& ring)
     : cfg_(cfg), clock_(clock), hal_(hal), cloud_(cloud), store_(store), ring_(ring),
       otp_(&store), lock_(&store, cfg.maxWrongOtp, cfg.lockMinutes), parcels_(&store),
+      fp_(nullptr), fpLock_(&store, cfg.maxWrongFinger, cfg.lockMinutes, "fplock"), fpNextPollMs_(0), fpFingerDown_(false), fpSlot_(0),
       occupied_(0), critShown_(false),
       busyUntil_(0), batMed_(cfg.medianWindow), batEma_(cfg.emaAlpha), battery_(0),
       nextBatteryMs_(0), nextHeartbeatMs_(0),
@@ -26,9 +27,11 @@ Locker::Locker(const LockerConfig& cfg, Clock& clock, Hal& hal, Cloud& cloud, St
 void Locker::begin(WakeReason wake) {
   otp_.load();
   lock_.load();
+  fpLock_.load();
   parcels_.load();
   uint32_t ceil = 0;
   if (store_.load("seq", &ceil, sizeof(ceil)) == sizeof(ceil)) seqCeil_ = ceil;
+  else seqCeil_ = cfg_.seqStart;      // chưa có seq được lưu: bắt đầu từ số cấu hình (ngẫu nhiên ở firmware)
   seq_ = seqCeil_;   // sau khi khởi động lại bỏ qua tối đa 31 số: không bao giờ tái dùng seq cũ
   uint16_t occ = 0;
   if (store_.load("occ", &occ, sizeof(occ)) == sizeof(occ)) occupied_ = occ;
@@ -128,12 +131,14 @@ void Locker::onKey(char k) {
     case Ui::Idle:
       if (k == cfg_.keyDeposit) { clearInput(); ui_ = Ui::DepositParcel; showInput("Nhap ma don"); }
       else if (k == cfg_.keyPickup) { clearInput(); ui_ = Ui::PickupComp; showInput("Nhap so ngan"); }
+      else if (k == cfg_.keyMaintenance) startMaintenance();
       break;
     case Ui::DepositParcel:
     case Ui::PickupComp:
     case Ui::PickupOtp:
+    case Ui::MaintComp:
       if (k == cfg_.keyCancel) {
-        if (bufLen_ == 0) goIdle(); else { clearInput(); showInput(ui_ == Ui::DepositParcel ? "Nhap ma don" : ui_ == Ui::PickupComp ? "Nhap so ngan" : "Nhap OTP"); }
+        if (bufLen_ == 0) goIdle(); else { clearInput(); showInput(ui_ == Ui::DepositParcel ? "Nhap ma don" : (ui_ == Ui::PickupComp || ui_ == Ui::MaintComp) ? "Nhap so ngan" : "Nhap OTP"); }
       } else if (k == cfg_.keyConfirm) handleConfirm();
       else if (isDigit(k)) handleDigit(k);
       break;
@@ -144,7 +149,7 @@ void Locker::onKey(char k) {
 }
 
 void Locker::handleDigit(char k) {
-  uint8_t limit = ui_ == Ui::DepositParcel ? cfg_.maxParcelDigits : ui_ == Ui::PickupComp ? 2 : cfg_.otpLength;
+  uint8_t limit = ui_ == Ui::DepositParcel ? cfg_.maxParcelDigits : (ui_ == Ui::PickupComp || ui_ == Ui::MaintComp) ? 2 : cfg_.otpLength;
   if (bufLen_ >= limit || bufLen_ >= sizeof(buf_) - 1) return;
   buf_[bufLen_++] = k;
   buf_[bufLen_] = 0;
@@ -173,10 +178,66 @@ void Locker::handleConfirm() {
     if (comp < 1 || comp > cfg_.numCompartments) { showMessage("Ngan khong co", "Kiem tra lai"); return; }
     pickupComp_ = uint8_t(comp);
     clearInput(); ui_ = Ui::PickupOtp; showInput("Nhap OTP");
+  } else if (ui_ == Ui::MaintComp) {
+    int comp = atoi(buf_);
+    if (comp < 1 || comp > cfg_.numCompartments) { showMessage("Ngan khong co", "Kiem tra lai"); return; }
+    confirmMaintenance(uint8_t(comp));
   } else if (ui_ == Ui::PickupOtp) {
     if (bufLen_ != cfg_.otpLength) { hal_.show("Nhap du ma OTP", ""); return; }
     confirmPickup(pickupComp_, buf_);
   }
+}
+
+// ---------------------------------------------------------------- mở bảo trì bằng vân tay (mở rộng)
+
+void Locker::startMaintenance() {
+  if (!fp_) { showMessage("Chua co van tay", "Dung OTP/keypad"); return; }
+  if (fpLock_.isLocked(1, clock_)) { showMessage("Bao tri bi khoa", "Thu lai sau"); return; }
+  clearInput();
+  ui_ = Ui::MaintFinger;
+  fpFingerDown_ = false;
+  lastKeyMs_ = clock_.millis();
+  fpNextPollMs_ = 0;
+  hal_.show("Dat van tay", "* de huy");
+}
+
+// Gọi từ tick() khi đang chờ vân tay. Không chặn: mỗi lần chỉ hỏi cảm biến một lượt ngắn.
+void Locker::pollFingerprint(uint32_t now) {
+  if (int32_t(now - fpNextPollMs_) < 0) return;
+  fpNextPollMs_ = now + cfg_.fingerPollMs;
+  int r = fp_->identify();
+  if (r == 0) { fpFingerDown_ = false; return; }               // chưa đặt ngón tay (hoặc vừa nhấc ra)
+  if (r > 0) {
+    fpLock_.clear(1);
+    fpSlot_ = r;
+    clearInput();
+    ui_ = Ui::MaintComp;
+    lastKeyMs_ = now;
+    showInput("Nhap so ngan");
+    return;
+  }
+  if (fpFingerDown_) return;                                    // cùng một lần đặt ngón tay: chỉ tính một lần sai
+  fpFingerDown_ = true;
+  LockoutTracker::Result res = fpLock_.registerWrong(1, clock_);
+  if (res.lockedNow) {
+    emit(EV_FP_LOCKOUT, 0);
+    showMessage("Sai van tay nhieu", "Bao tri bi khoa");
+  } else {
+    char line[24]; snprintf(line, sizeof(line), "Con %u lan", res.left);
+    hal_.show("Van tay khong khop", line);
+  }
+}
+
+// Vân tay đúng và nhân viên đã chọn ngăn: cấp xung mở và GHI VẾT (vân tay nào, ngăn nào) thành sự kiện.
+// Cửa sổ mở loại "remote": đóng/mở cửa sau đó không bị coi là TAMPER và không sinh DEPOSIT/PICKUP.
+void Locker::confirmMaintenance(uint8_t comp) {
+  char who[PARCEL_MAX];
+  snprintf(who, sizeof(who), "FP%d", fpSlot_);
+  emit(EV_MAINT_OPEN, comp, who);
+  openFor(comp, W_REMOTE, "");
+  char l2[24]; snprintf(l2, sizeof(l2), "Ngan %u", comp);
+  showMessage("Mo bao tri", l2);
+  clearInput();
 }
 
 // ---------------------------------------------------------------- lấy hàng
@@ -224,6 +285,7 @@ void Locker::onCloudPickupReply(bool ok, const char* error, int left) {
     showMessage("Sai ma OTP", line);
   } else if (strcmp(error, "EXPIRED") == 0) showMessage("Ma het han", "Lien he van hanh");
   else if (strcmp(error, "EMPTY") == 0) showMessage("Ngan trong", "Kiem tra so ngan");
+  else if (strcmp(error, "FACE_REQUIRED") == 0) showMessage("Hang can xac thuc", "Dung ung dung (mat)", 4000);   // đơn giá trị cao: không mở bằng keypad
   else showMessage("Loi he thong", error);
   clearInput();
 }
@@ -365,7 +427,11 @@ void Locker::tick() {
     case Ui::Message:
       if (int32_t(now - messageUntilMs_) >= 0) goIdle();
       break;
-    case Ui::DepositParcel: case Ui::PickupComp: case Ui::PickupOtp:
+    case Ui::MaintFinger:
+      pollFingerprint(now);
+      if (ui_ == Ui::MaintFinger && int32_t(now - lastKeyMs_) >= int32_t(cfg_.inputTimeoutSec * 1000UL)) showMessage("Het gio", "", 1500);
+      break;
+    case Ui::DepositParcel: case Ui::PickupComp: case Ui::PickupOtp: case Ui::MaintComp:
       if (int32_t(now - lastKeyMs_) >= int32_t(cfg_.inputTimeoutSec * 1000UL)) {
         showMessage("Het gio nhap", "", 1500);
         clearInput();

@@ -313,7 +313,7 @@ def test_otp_hash_is_cached_in_redis_with_a_ttl_and_dropped_after_pickup(cloud, 
     locker.event(pb.DEPOSIT, comp, PARCEL)
     key = parcels.OTP_KEY.format(locker=LOCKER, comp=comp)
     cached = json.loads(redis_kv.get(key))
-    assert set(cached) == {"hash", "salt", "exp"}                    # chỉ bản băm, không có OTP thô
+    assert set(cached) == {"hash", "salt", "exp", "rf"}                    # chỉ bản băm, không có OTP thô
     assert 0 < redis_kv.ttl(key) <= settings.otp_ttl_hours * 3600
     code = sms_code()
     assert code not in redis_kv.get(key)

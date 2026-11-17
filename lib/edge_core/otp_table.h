@@ -38,7 +38,8 @@ class OtpTable {
 // Đếm sai theo ngăn và khóa tạm. Dùng khi offline; khi online cloud giữ bộ đếm.
 class LockoutTracker {
  public:
-  LockoutTracker(Storage* store, uint8_t maxWrong, uint16_t lockMinutes);
+  // key: tên khóa trong kho bền; bộ đếm vân tay dùng khóa riêng để không lẫn với khóa ngăn do sai OTP
+  LockoutTracker(Storage* store, uint8_t maxWrong, uint16_t lockMinutes, const char* key = "lock");
 
   size_t load();
   bool isLocked(uint8_t comp, const Clock& clock) const;
@@ -52,6 +53,7 @@ class LockoutTracker {
   struct Slot { uint8_t wrong; uint32_t untilEpoch; uint32_t untilMs; };
   Slot s_[MAX_COMP + 1];
   Storage* store_;
+  const char* key_;
   uint8_t maxWrong_;
   uint32_t lockMs_;
   void persist();

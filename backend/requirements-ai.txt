@@ -1,0 +1,4 @@
+# Phần mở rộng ngoài đề (docs/EXTENSIONS.md); không cài thì các tính năng này tự bỏ qua hoặc báo thiếu thư viện
+numpy>=1.26
+scikit-learn>=1.4
+opencv-python-headless>=4.9

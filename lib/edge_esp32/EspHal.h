@@ -10,6 +10,7 @@ class EspHal : public edge::Hal {
  public:
   explicit EspHal(const HwConfig& hw);
   void begin();
+  void selfTest();                       // bản mô phỏng (74HC595): chạy đèn 1..8 lúc khởi động để kiểm tra dây khóa
   void service(uint32_t nowMs);          // nhả solenoid khi hết xung; gọi mỗi vòng lặp, KHÔNG chặn
 
   // edge::Hal

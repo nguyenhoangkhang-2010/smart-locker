@@ -33,7 +33,8 @@ def _now() -> datetime:
 
 
 def create_parcel(parcel_id: str, recipient_phone: str, size_code: str = "M",
-                  locker_id: Optional[str] = None, created_by: Optional[str] = None) -> None:
+                  locker_id: Optional[str] = None, created_by: Optional[str] = None,
+                  require_face: bool = False) -> None:
     """Tạo đơn (CREATED). Mã đơn chỉ gồm chữ số vì shipper nhập từ keypad."""
     if not (parcel_id.isascii() and parcel_id.isdigit() and 1 <= len(parcel_id) <= 12):
         raise ValueError("parcel_id must be 1-12 digits (entered on the keypad)")
@@ -43,9 +44,9 @@ def create_parcel(parcel_id: str, recipient_phone: str, size_code: str = "M",
         raise ValueError("recipient_phone is required")
     with tx() as cur:
         cur.execute(
-            "INSERT INTO parcels (parcel_id, recipient_phone, size_code, locker_id, created_by, offline_salt) "
-            "VALUES (%s, %s, %s, %s, %s, %s)",
-            (parcel_id, recipient_phone.strip(), size_code, locker_id, created_by, otp_lib.new_salt_hex()),
+            "INSERT INTO parcels (parcel_id, recipient_phone, size_code, locker_id, created_by, offline_salt, require_face) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s)",
+            (parcel_id, recipient_phone.strip(), size_code, locker_id, created_by, otp_lib.new_salt_hex(), require_face),
         )
 
 
@@ -175,6 +176,8 @@ def on_deposit_done(locker_id: str, comp_no: int, parcel_id: str,
             locker = cur.fetchone()
             body = (f"Don {parcel['parcel_id']} da o tu {locker['name'] if locker else locker_id}, "
                     f"ngan {comp_no}. Ma lay hang: {code} (het han {expires:%d/%m %H:%M} UTC).")
+            if parcel["require_face"]:
+                body += " Hang gia tri cao: xac thuc khuon mat tren ung dung truoc khi lay."
             cur.execute(
                 "INSERT INTO sms_outbox (to_phone, body, parcel_id) VALUES (%s, %s, %s)",
                 (parcel["recipient_phone"], body, parcel["parcel_id"]),
@@ -187,12 +190,15 @@ def on_deposit_done(locker_id: str, comp_no: int, parcel_id: str,
 
     if kv is not None:
         kv.set(OTP_KEY.format(locker=locker_id, comp=comp_no),
-               json.dumps({"hash": digest, "salt": salt, "exp": int(expires.timestamp())}),
+               json.dumps({"hash": digest, "salt": salt, "exp": int(expires.timestamp()), "rf": bool(parcel["require_face"])}),
                settings.otp_ttl_hours * 3600)
         lockers.refresh_status(kv, locker_id)
 
-    commands = [Command(locker_id, "sync_otp", {
-        "comp": comp_no, "hash": digest, "salt": salt, "expires": int(expires.timestamp())})]
+    commands = []
+    if not parcel["require_face"]:
+        # Đơn cần khuôn mặt thì KHÔNG đẩy bản băm OTP xuống tủ: có bản băm là tủ mở được bằng OTP khi offline, bỏ qua khuôn mặt
+        commands.append(Command(locker_id, "sync_otp", {
+            "comp": comp_no, "hash": digest, "salt": salt, "expires": int(expires.timestamp())}))
     if parcel["offline_salt"]:
         # đơn đã vào tủ: bỏ khỏi danh sách gửi hàng offline (nếu tủ còn giữ)
         commands.append(Command(locker_id, "revoke_parcel", {
@@ -209,24 +215,27 @@ def _otp_record(kv, locker_id: str, comp_no: int) -> Optional[dict]:
     if cached:
         try:
             rec = json.loads(cached)
-            return {"hash": rec["hash"], "salt": rec["salt"], "exp": rec["exp"]}
+            return {"hash": rec["hash"], "salt": rec["salt"], "exp": rec["exp"], "rf": bool(rec.get("rf", False))}
         except (ValueError, KeyError):
             kv.delete(key)
 
     rows = query(
-        "SELECT otp_hash, otp_salt, otp_expires_at FROM parcels "
+        "SELECT otp_hash, otp_salt, otp_expires_at, require_face FROM parcels "
         "WHERE locker_id = %s AND comp_no = %s AND status = 'DEPOSITED'", (locker_id, comp_no))
     if not rows or not rows[0]["otp_hash"]:
         return None
     r = rows[0]
     exp = int(r["otp_expires_at"].timestamp()) if r["otp_expires_at"] else 0
     ttl = max(1, exp - int(_now().timestamp())) if exp else settings.otp_ttl_hours * 3600
-    kv.set(key, json.dumps({"hash": r["otp_hash"], "salt": r["otp_salt"], "exp": exp}), ttl)
-    return {"hash": r["otp_hash"], "salt": r["otp_salt"], "exp": exp}
+    kv.set(key, json.dumps({"hash": r["otp_hash"], "salt": r["otp_salt"], "exp": exp, "rf": r["require_face"]}), ttl)
+    return {"hash": r["otp_hash"], "salt": r["otp_salt"], "exp": exp, "rf": r["require_face"]}
 
 
-def verify_pickup(kv, locker_id: str, comp_no: int, code: str) -> PickupResult:
-    """Người nhận nhập (ngăn, OTP) khi tủ đang online. Đếm sai và khóa ngăn ở đây."""
+def verify_pickup(kv, locker_id: str, comp_no: int, code: str, face_verified: bool = False) -> PickupResult:
+    """Người nhận nhập (ngăn, OTP) khi tủ đang online. Đếm sai và khóa ngăn ở đây.
+
+    Đơn yêu cầu khuôn mặt: OTP đúng vẫn chưa đủ. Chỉ đường qua ứng dụng (đã xác minh khuôn mặt đúng chủ số điện thoại)
+    truyền face_verified=True; keypad của tủ thì không, nên nhận FACE_REQUIRED."""
     lock_key = f"otplock:{locker_id}:{comp_no}"
     fail_key = f"otpfail:{locker_id}:{comp_no}"
 
@@ -240,6 +249,8 @@ def verify_pickup(kv, locker_id: str, comp_no: int, code: str) -> PickupResult:
         return PickupResult(False, "EXPIRED")
 
     if otp_lib.matches(code, rec["salt"], comp_no, rec["hash"]):
+        if rec.get("rf") and not face_verified:
+            return PickupResult(False, "FACE_REQUIRED")          # không tính là nhập sai OTP
         kv.delete(fail_key)
         return PickupResult(True, commands=[
             Command(locker_id, "open", {"comp": comp_no, "reason": "pickup"})])

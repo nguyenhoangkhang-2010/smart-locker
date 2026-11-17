@@ -9,6 +9,7 @@
 #include <unity.h>
 
 #include "filters.h"
+#include "fp_sim.h"
 #include "interfaces.h"
 #include "locker.h"
 #include "ota_guard.h"
@@ -1066,6 +1067,174 @@ void test_shift_io_read_does_not_disturb_the_outputs() {
   TEST_ASSERT_EQUAL_UINT8(0xA5, chips.q);
 }
 
+
+// ===================================================================== seq khi flash mới
+
+void test_locker_seq_starts_at_the_configured_offset_only_when_nothing_is_stored() {
+  MemStorage st; FakeClock clk; FakeHal hal; FakeCloud cloud; LockerConfig cfg;
+  {
+    PriorityRing ring(256, &st);
+    Locker lk(cfg, clk, hal, cloud, st, ring);
+    lk.setSeqStart(500000);                                      // flash mới: bắt đầu từ số ngẫu nhiên của firmware
+    lk.begin();
+    lk.onRpcOpen(1, "remote"); for (int i = 0; i < 100; ++i) { clk.ms += 10; lk.tick(); }
+    hal.closed[1] = false; for (int i = 0; i < 20; ++i) { clk.ms += 10; lk.tick(); }
+    TEST_ASSERT_TRUE_MESSAGE(events(ring)[0].seq > 500000, "seq phải bắt đầu từ số đã cấu hình, không phải 1");
+  }
+  PriorityRing ring2(256, &st); ring2.load();
+  Locker again(cfg, clk, hal, cloud, st, ring2);
+  again.setSeqStart(900000);                                     // đã có seq lưu: bỏ qua số khởi đầu mới
+  again.begin();
+  TEST_ASSERT_TRUE_MESSAGE(again.lastSeq() < 600000, "có seq lưu rồi thì tiếp tục từ đó, không nhảy sang số khởi đầu mới");
+}
+
+
+// ===================================================================== Mở bảo trì bằng vân tay (mở rộng, ngoài đề)
+
+struct FakeFinger : Fingerprint {
+  std::vector<int> script;     // kết quả lần lượt của từng lượt hỏi cảm biến
+  size_t i = 0;
+  int fallback = 0;            // sau khi hết kịch bản
+  int polls = 0;
+  int identify() override { ++polls; return i < script.size() ? script[i++] : fallback; }
+};
+
+void test_fingerprint_key_does_nothing_without_a_sensor() {
+  Rig r;
+  r.keys("D");
+  TEST_ASSERT_EQUAL_STRING("Chua co van tay", r.hal.l1.c_str());
+  TEST_ASSERT_EQUAL(0, r.hal.pulses.size());
+  r.advance(3000);
+  TEST_ASSERT_EQUAL(int(Ui::Idle), int(r.lk.ui()));
+}
+
+void test_fingerprint_unlocks_the_chosen_compartment_and_leaves_an_audit_event() {
+  FakeFinger f; f.script = {0, 0, 3};                  // chưa đặt tay, chưa đặt tay, rồi vân tay ô 3
+  Rig r; r.cloud.isOnline = false;                     // mở bảo trì không cần mạng
+  r.lk.setFingerprint(&f);
+  r.keys("D");
+  TEST_ASSERT_EQUAL(int(Ui::MaintFinger), int(r.lk.ui()));
+  TEST_ASSERT_EQUAL_STRING("Dat van tay", r.hal.l1.c_str());
+  r.advance(1500);
+  TEST_ASSERT_EQUAL(int(Ui::MaintComp), int(r.lk.ui()));
+  TEST_ASSERT_EQUAL(0, r.hal.pulses.size());           // chưa chọn ngăn: chưa mở gì
+  r.keys("5#");
+  TEST_ASSERT_EQUAL(1, r.hal.pulses.size());
+  TEST_ASSERT_EQUAL(5, r.hal.pulses[0].first);
+  r.advance(600); r.openDoor(5); r.closeDoor(5);
+  std::vector<uint8_t> want = {EV_MAINT_OPEN, EV_DOOR_OPEN, EV_DOOR_CLOSE};
+  TEST_ASSERT_TRUE_MESSAGE(r.types() == want, "mở bảo trì: không TAMPER, không DEPOSIT/PICKUP");
+  auto ev = events(r.ring);
+  TEST_ASSERT_EQUAL_STRING("FP3", ev[0].parcel);       // ai mở: vân tay ô 3
+  TEST_ASSERT_EQUAL(5, ev[0].comp);
+}
+
+void test_fingerprint_rejects_a_compartment_that_does_not_exist() {
+  FakeFinger f; f.script = {2};
+  Rig r; r.lk.setFingerprint(&f);
+  r.keys("D"); r.advance(500);
+  r.keys("99#");
+  TEST_ASSERT_EQUAL_STRING("Ngan khong co", r.hal.l1.c_str());
+  TEST_ASSERT_EQUAL(0, r.hal.pulses.size());
+  TEST_ASSERT_TRUE(r.types().empty());
+}
+
+void test_a_finger_held_on_the_sensor_counts_as_one_wrong_attempt() {
+  FakeFinger f; f.fallback = -1;                        // ngón lạ đặt mãi không nhấc
+  Rig r; r.lk.setFingerprint(&f);
+  r.keys("D"); r.advance(3000);
+  TEST_ASSERT_TRUE(f.polls >= 8);                       // đã hỏi cảm biến nhiều lần
+  TEST_ASSERT_EQUAL_STRING("Van tay khong khop", r.hal.l1.c_str());
+  TEST_ASSERT_EQUAL_STRING("Con 4 lan", r.hal.l2.c_str());   // nhưng chỉ tính MỘT lần sai
+}
+
+void test_five_wrong_fingers_lock_maintenance_and_report_it() {
+  FakeFinger f; f.script = {-1, 0, -1, 0, -1, 0, -1, 0, -1}; f.fallback = 0;
+  Rig r; r.lk.setFingerprint(&f);
+  r.keys("D"); r.advance(4000);
+  std::vector<uint8_t> want = {EV_FP_LOCKOUT};
+  TEST_ASSERT_TRUE(r.types() == want);
+  TEST_ASSERT_EQUAL_STRING("Sai van tay nhieu", r.hal.l1.c_str());
+  r.advance(3000);
+  f.script = {3}; f.i = 0;                              // vân tay ĐÚNG cũng bị từ chối khi đang khóa
+  r.keys("D");
+  TEST_ASSERT_EQUAL_STRING("Bao tri bi khoa", r.hal.l1.c_str());
+  TEST_ASSERT_EQUAL(int(Ui::Message), int(r.lk.ui()));
+  r.advance(3000);
+  r.clk.ep += 15 * 60 + 1; r.clk.ms += (15 * 60 + 1) * 1000; r.advance(100);   // hết 15 phút
+  r.keys("D"); r.advance(1000);
+  TEST_ASSERT_EQUAL(int(Ui::MaintComp), int(r.lk.ui()));
+}
+
+void test_fingerprint_lock_survives_a_power_cycle() {
+  MemStorage shared;
+  FakeFinger f; f.script = {-1, 0, -1, 0, -1, 0, -1, 0, -1}; f.fallback = 0;
+  { Rig r(&shared); r.lk.setFingerprint(&f); r.keys("D"); r.advance(4000); }
+  FakeFinger g; g.script = {3};
+  Rig again(&shared); again.lk.setFingerprint(&g);      // rút điện rồi cắm lại
+  again.keys("D");
+  TEST_ASSERT_EQUAL_STRING("Bao tri bi khoa", again.hal.l1.c_str());
+  TEST_ASSERT_EQUAL_MESSAGE(0, g.polls, "đang khóa: không được thử lại bằng cách khởi động lại");
+}
+
+void test_a_correct_finger_clears_the_wrong_attempts() {
+  FakeFinger f;
+  f.script = {-1, 0, -1, 0, -1, 0, -1, 0, 4};          // 4 lần sai rồi đúng
+  Rig r; r.lk.setFingerprint(&f);
+  r.keys("D"); r.advance(3000);
+  TEST_ASSERT_EQUAL(int(Ui::MaintComp), int(r.lk.ui()));
+  r.keys("*"); r.keys("*"); r.advance(100);              // thoát ra
+  f.script = {-1, 0, -1, 0, -1, 0, -1, 0}; f.i = 0; f.fallback = 0;
+  r.keys("D"); r.advance(3000);
+  TEST_ASSERT_TRUE_MESSAGE(r.types().empty(), "4 lần sai mới sau khi đã đúng: chưa đủ để khóa");
+}
+
+void test_fingerprint_wait_can_be_cancelled_and_times_out() {
+  FakeFinger f;                                          // không bao giờ có ngón tay
+  Rig r; r.lk.setFingerprint(&f);
+  r.keys("D");
+  TEST_ASSERT_EQUAL(int(Ui::MaintFinger), int(r.lk.ui()));
+  r.keys("*");
+  TEST_ASSERT_EQUAL(int(Ui::Idle), int(r.lk.ui()));
+  r.keys("D");
+  r.advance(21000);
+  TEST_ASSERT_TRUE(r.lk.ui() == Ui::Message || r.lk.ui() == Ui::Idle);
+  r.advance(3000);
+  TEST_ASSERT_EQUAL(int(Ui::Idle), int(r.lk.ui()));
+}
+
+
+// ===================================================================== Vân tay ảo (demo Wokwi): phân tích lệnh Serial
+
+void test_virtual_fingerprint_parses_slot_wrong_and_junk() {
+  int r = 0;
+  TEST_ASSERT_TRUE(parseFingerprintCommand("fp 3", &r));      TEST_ASSERT_EQUAL(3, r);
+  TEST_ASSERT_TRUE(parseFingerprintCommand("  FP   12\r", &r)); TEST_ASSERT_EQUAL(12, r);
+  TEST_ASSERT_TRUE(parseFingerprintCommand("fp x", &r));      TEST_ASSERT_EQUAL(-1, r);
+  TEST_ASSERT_TRUE(parseFingerprintCommand("fp -1", &r));     TEST_ASSERT_EQUAL(-1, r);
+  TEST_ASSERT_FALSE(parseFingerprintCommand("fp 0", &r));      // 0 = "chưa có tay", không phải lệnh
+  TEST_ASSERT_FALSE(parseFingerprintCommand("fp 201", &r));
+  TEST_ASSERT_FALSE(parseFingerprintCommand("fp", &r));
+  TEST_ASSERT_FALSE(parseFingerprintCommand("fp 3abc", &r));
+  TEST_ASSERT_FALSE(parseFingerprintCommand("fingerprint 3", &r));
+  TEST_ASSERT_FALSE(parseFingerprintCommand("", &r));
+}
+
+
+void test_high_value_parcel_is_refused_at_the_keypad_with_a_clear_message_and_no_lockout() {
+  Rig r;
+  for (int i = 0; i < 6; ++i) {                          // nhiều lần "cần khuôn mặt" không được tính là nhập sai OTP
+    r.keys("B3#482913#");
+    r.lk.onCloudPickupReply(false, "FACE_REQUIRED", 0);
+    TEST_ASSERT_EQUAL_STRING("Hang can xac thuc", r.hal.l1.c_str());
+    r.advance(4500);
+  }
+  TEST_ASSERT_EQUAL(0, r.hal.pulses.size());
+  TEST_ASSERT_TRUE(r.types().empty());                   // không có OTP_LOCKOUT
+  r.keys("B3#482913#");
+  TEST_ASSERT_EQUAL_MESSAGE(1, r.cloud.pickups.size() > 0, "ngăn không bị khóa: vẫn hỏi cloud được");
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_sha256_nist_vectors);
@@ -1134,5 +1303,16 @@ int main() {
   RUN_TEST(test_shift_io_595_maps_bit_k_to_output_k_for_every_pattern);
   RUN_TEST(test_shift_io_165_returns_d0_as_bit0_for_every_pattern);
   RUN_TEST(test_shift_io_read_does_not_disturb_the_outputs);
+  RUN_TEST(test_locker_seq_starts_at_the_configured_offset_only_when_nothing_is_stored);
+  RUN_TEST(test_fingerprint_key_does_nothing_without_a_sensor);
+  RUN_TEST(test_fingerprint_unlocks_the_chosen_compartment_and_leaves_an_audit_event);
+  RUN_TEST(test_fingerprint_rejects_a_compartment_that_does_not_exist);
+  RUN_TEST(test_a_finger_held_on_the_sensor_counts_as_one_wrong_attempt);
+  RUN_TEST(test_five_wrong_fingers_lock_maintenance_and_report_it);
+  RUN_TEST(test_fingerprint_lock_survives_a_power_cycle);
+  RUN_TEST(test_a_correct_finger_clears_the_wrong_attempts);
+  RUN_TEST(test_fingerprint_wait_can_be_cancelled_and_times_out);
+  RUN_TEST(test_virtual_fingerprint_parses_slot_wrong_and_junk);
+  RUN_TEST(test_high_value_parcel_is_refused_at_the_keypad_with_a_clear_message_and_no_lockout);
   return UNITY_END();
 }

@@ -7,6 +7,7 @@ namespace edge {
 enum EventType : uint8_t {
   EV_UNKNOWN = 0, EV_DEPOSIT = 1, EV_PICKUP = 2, EV_DOOR_OPEN = 3, EV_DOOR_CLOSE = 4,
   EV_TAMPER = 5, EV_HEARTBEAT = 6, EV_OTP_LOCKOUT = 7,
+  EV_MAINT_OPEN = 8, EV_FP_LOCKOUT = 9,
 };
 
 static const uint8_t PARCEL_MAX = 16;   // 12 chữ số + chỗ dư

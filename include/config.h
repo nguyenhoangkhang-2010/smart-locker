@@ -17,10 +17,30 @@
 #endif
 // Mô phỏng Wokwi 8 ngăn: Wokwi không có PCF8574 nên dùng 74HC595 (8 khóa) + 74HC165 (8 cửa) thay thế, chỉ 6 chân ESP32.
 // Bật bằng SECRET_SHIFT_IO 1 (tools/wokwi_demo_setup.py làm giúp). Tủ thật: 0, dùng PCF8574 như đề.
+// Vân tay (mở rộng, ngoài đề): 1 = bật khi biên dịch môi trường esp32dev-fp. Chân UART của cảm biến: chọn chân rảnh của
+// board thật (0 = chưa đấu). Đề không có tính năng này; tắt mặc định.
+#ifndef SECRET_FINGERPRINT
+#define SECRET_FINGERPRINT 0
+#endif
+// Vân tay ẢO qua Serial Monitor (demo Wokwi, không cần phần cứng): 1 = bật. tools/wokwi_demo_setup.py bật giúp.
+#ifndef SECRET_FINGERPRINT_SIM
+#define SECRET_FINGERPRINT_SIM 0
+#endif
+#ifndef SECRET_FP_RX
+#define SECRET_FP_RX 0
+#endif
+#ifndef SECRET_FP_TX
+#define SECRET_FP_TX 0
+#endif
 #ifndef SECRET_SHIFT_IO
 #define SECRET_SHIFT_IO 0
 #endif
+// Thời gian cấp xung mở chốt. Đề: 0,3-1 s. Demo Wokwi đặt dài hơn (SECRET_PULSE_MS) để mắt kịp thấy LED sáng.
+#ifndef SECRET_PULSE_MS
+#define SECRET_PULSE_MS 500
+#endif
 struct HwConfig {
+  uint8_t  fingerprintRx    = SECRET_FP_RX, fingerprintTx = SECRET_FP_TX;   // cảm biến vân tay (mở rộng)
   uint8_t  numCompartments  = SECRET_NUM_COMPARTMENTS;   // số ngăn tủ
   uint8_t  keypadRows[4]    = {13, 12, 14, 27};
   uint8_t  keypadCols[4]    = {26, 25, 33, 32};
@@ -37,7 +57,7 @@ struct HwConfig {
   uint8_t  srLoad = 16, srInClock = 17, srInData = 34;      // 74HC165: PL, CP, Q7 (cửa)
   uint8_t  doorSensorPin    = 34;              // reed switch tổng (đánh thức EXT0 khi cửa bị mở trái phép)
   bool     doorClosedIsHigh = false;           // reed đóng = nối GND = LOW
-  uint16_t solenoidPulseMs  = 500;             // thời gian cấp điện mở chốt
+  uint16_t solenoidPulseMs  = SECRET_PULSE_MS;             // thời gian cấp điện mở chốt
   uint8_t  batteryAdcPin    = 35;
   char     compSize[9]      = SECRET_COMP_SIZES;        // cỡ từng ngăn (S/M/L), khớp bảng compartments của cloud
   // Ngủ sâu: để GPIO 12 ở mức cao trong lúc ngủ thì phím hàng 2 (4 5 6 B) mới đánh thức được, nhưng GPIO 12 là
@@ -57,7 +77,13 @@ struct FilterConfig {
 };
 
 // ---- Mạng & đồng bộ ----
+// Keep-alive MQTT (giây). Đề: có keep-alive. Mạng của Wokwi/broker công cộng hay cắt kết nối rảnh sau ~20 s,
+// nên demo đặt ngắn hơn (SECRET_MQTT_KEEPALIVE trong secrets.h); tủ thật để 30 là đủ.
+#ifndef SECRET_MQTT_KEEPALIVE
+#define SECRET_MQTT_KEEPALIVE 30
+#endif
 struct NetConfig {
+  uint16_t    keepaliveSec   = SECRET_MQTT_KEEPALIVE;
   const char* wifiSsid       = SECRET_WIFI_SSID;
   const char* wifiPassword   = SECRET_WIFI_PASSWORD;
   int         wifiChannel    = SECRET_WIFI_CHANNEL;   // 0 = tự dò

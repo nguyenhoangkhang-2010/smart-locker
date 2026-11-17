@@ -6,7 +6,7 @@ Rà soát lại **từng mục** của đề (không chỉ phần đã nhớ). K
 - ◑ **Có mã, chưa kiểm chứng đủ**: biên dịch được/đã đọc đúng nhưng chưa chạy trên phần cứng hoặc hạ tầng thật.
 - ✖ **Chưa làm**, kèm lý do. Đây là danh sách thiếu so với đề, không giấu.
 - ⚖ **Khác đề có chủ ý** (lý do trong `docs/CONTRACT.md` mục 1).
-- ➕ **Ngoài đề** (phần mở rộng, giữ lại): bản "tủ truy cập cá nhân" cũ ở `legacy/` (PIN/RFID/vân tay/nhận diện mặt/Isolation Forest),
+- ➕ **Ngoài đề** (phần mở rộng, giữ lại): phát hiện bất thường (Isolation Forest + luật), dự báo pin, xác minh khuôn mặt, mở bảo trì bằng vân tay (chi tiết, giới hạn và cách bật: `docs/EXTENSIONS.md`); bản "tủ truy cập cá nhân" cũ ở `legacy/` (PIN/RFID/vân tay/nhận diện mặt/Isolation Forest),
   `tools/wokwi_*`, bản thử SMS, bản đồ không cần Internet, WebSocket, giao diện shipper/người nhận.
 
 Lệnh kiểm chứng: `pytest` (backend), `pio test -e native` (lõi firmware), `pio run -e esp32dev` (biên dịch firmware).

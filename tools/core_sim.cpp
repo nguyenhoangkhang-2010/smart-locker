@@ -13,6 +13,7 @@
 //   rpc_sync_otp <ngăn> <hash> <salt> <hết hạn>  OK                    (kết thúc mỗi lệnh)
 //   rpc_revoke <ngăn>
 //   rpc_sync_parcel <hash> <salt> <S|M|L> <hết hạn> | rpc_revoke_parcel <hash> | rpc_sync_occupancy <n> <ngăn...>
+//   fp <n...> [fallback <m>]  kịch bản cảm biến vân tay (0 chưa có tay, >0 ô khớp, -1 không khớp) cho phím D
 //   sleep <timer|key|door>   ghi trạng thái cửa như trước khi ngủ sâu, rồi khởi động lại với lý do thức dậy đó
 //   reply_deposit ok <ngăn> | err <MÃ>
 //   reply_pickup ok | err <MÃ> <còn>
@@ -98,6 +99,12 @@ struct SimCloud : Cloud {
   bool requestPickup(uint8_t c, const char* o) override { printf("ASK_PICKUP %u %s\n", c, o); return true; }
 };
 
+struct SimFinger : Fingerprint {
+  std::vector<int> script; size_t i = 0; int fallback = 0;
+  int identify() override { return i < script.size() ? script[i++] : fallback; }
+};
+static SimFinger gFinger;
+
 // Mọi thứ cần dựng lại khi "rút điện": chỉ Storage được giữ.
 struct Device {
   SimHal hal;
@@ -109,6 +116,7 @@ struct Device {
          WakeReason wake = WakeReason::ColdBoot, const SimHal* keepDoors = nullptr)
       : cloud(&net), ring(256, &store), locker(LockerConfig(), clk, hal, cloud, store, ring),
         sync(SyncConfig(), deviceId, ring, net, snd, rng) {
+    locker.setFingerprint(&gFinger);
     if (keepDoors) memcpy(hal.closed, keepDoors->closed, sizeof(hal.closed));   // cửa vẫn như cũ qua giấc ngủ
     ring.load();
     locker.begin(wake);
@@ -159,6 +167,11 @@ int main(int argc, char** argv) {
       SimHal keep = dev->hal;
       WakeReason w = why == "timer" ? WakeReason::Timer : why == "key" ? WakeReason::Key : WakeReason::Door;
       dev.reset(new Device(deviceId, clk, net, store, snd, rng, w, &keep));
+    }
+    else if (cmd == "fp") {
+      gFinger.script.clear(); gFinger.i = 0; gFinger.fallback = 0;
+      std::string tok;
+      while (in >> tok) { if (tok == "fallback") { in >> gFinger.fallback; break; } gFinger.script.push_back(atoi(tok.c_str())); }
     }
     else if (cmd == "otp_has") { int c; in >> c; printf("OTP %d %s\n", c, dev->locker.otps().has(uint8_t(c)) ? "yes" : "no"); }
     else if (cmd == "state") {

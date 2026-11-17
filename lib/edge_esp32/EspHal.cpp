@@ -2,6 +2,7 @@
 
 #include <Adafruit_GFX.h>
 #include <Adafruit_ILI9341.h>
+#include <SPI.h>
 #include <WiFi.h>
 #include <Wire.h>
 
@@ -44,10 +45,20 @@ void EspHal::begin() {
 
   pinMode(hw_.tftLed, OUTPUT);
   digitalWrite(hw_.tftLed, HIGH);
+  // TFT chỉ ghi, không có dây MISO. Nếu để mặc định, SPI VSPI chiếm GPIO 19 làm MISO và đổi nó sang đầu vào, làm hỏng mọi
+  // thứ dùng chân 19 làm đầu ra (chốt STCP của 74HC595 ở bản mô phỏng; PWRKEY của module 4G ở tủ thật). Lưu ý: ở ESP32,
+  // MISO = -1 nghĩa là "dùng chân mặc định (19)", nên phải trỏ MISO sang một chân đầu vào không dùng (GPIO 39, chỉ vào).
+  SPI.begin(hw_.tftSck, 39, hw_.tftMosi, hw_.tftCs);
   tft = new Adafruit_ILI9341(hw_.tftCs, hw_.tftDc, hw_.tftRst);
   tft->begin();
   tft->setRotation(1);
   tft->fillScreen(ILI9341_BLACK);
+
+  if (shift_) {   // đặt lại chế độ đầu ra SAU khi SPI khởi tạo, phòng khi thư viện TFT đổi chức năng chân nào đó
+    const uint8_t outs[] = {hw_.srData, hw_.srClock, hw_.srLatch, hw_.srLoad, hw_.srInClock};
+    for (uint8_t p : outs) pinMode(p, OUTPUT);
+    shift_->begin();
+  }
 }
 
 void EspHal::writeLock(uint8_t comp, bool energise) {
@@ -66,7 +77,22 @@ void EspHal::writeLock(uint8_t comp, bool energise) {
   }
 }
 
+void EspHal::selfTest() {
+  if (!shift_) return;                       // tủ thật: không cấp điện thử cả 8 solenoid
+  // Hai giai đoạn dài đủ để mắt kịp nhìn khi Wokwi vừa mở: cả 8 LED sáng 2 giây, rồi chạy lần lượt từng ngăn
+  Serial.println("[HAL] tu kiem tra khoa 1/2: bat ca 8 den trong 2 giay");
+  for (uint8_t c = 1; c <= hw_.numCompartments && c <= 8; ++c) writeLock(c, true);
+  delay(2000);
+  Serial.println("[HAL] tu kiem tra khoa 2/2: chay den ngan 1..8");
+  for (uint8_t c = 1; c <= hw_.numCompartments && c <= 8; ++c) {
+    for (uint8_t o = 1; o <= hw_.numCompartments && o <= 8; ++o) writeLock(o, o == c);
+    delay(400);
+  }
+  for (uint8_t c = 1; c <= hw_.numCompartments && c <= 8; ++c) writeLock(c, false);
+}
+
 void EspHal::pulseLock(uint8_t comp, uint16_t ms) {
+  Serial.printf("[HAL] cap xung ngan %u trong %u ms\n", comp, ms);
   if (comp < 1 || comp > 8) return;
   writeLock(comp, true);
   pulseEnd_[comp] = millis() + ms;

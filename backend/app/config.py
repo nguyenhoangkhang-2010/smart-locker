@@ -65,6 +65,27 @@ class Settings:
     parcel_sync_ttl_hours = 24 * 7        # đơn đẩy xuống tủ để gửi hàng offline có hạn dùng
     parcel_sync_max = 32                  # khớp ParcelTable::CAPACITY của firmware
 
+    # Phần mở rộng ngoài đề (docs/EXTENSIONS.md): phát hiện bất thường, dự báo pin, khuôn mặt
+    anomaly_enabled = _bool("ANOMALY_ENABLED", False)      # quét tự động mỗi giờ; tắt mặc định
+    anomaly_min_hours = 48                                 # cần ít nhất bấy nhiêu giờ lịch sử mới học mô hình
+    anomaly_recent_hours = 3                               # chấm điểm bấy nhiêu giờ gần nhất
+    anomaly_contamination = 0.03
+    battery_floor_mv = 11000                               # dưới ngưỡng này là pin thấp
+    weak_rssi_dbm = -88
+    forecast_min_points = 24
+    forecast_min_r2 = 0.3
+    forecast_flat_mv_per_hour = 0.5                        # dốc nhẹ hơn mức này coi là ổn định
+    face_enabled = _bool("FACE_ENABLED", False)
+    face_model_dir = _path("FACE_MODEL_DIR", "models/face")
+    face_threshold = float(os.getenv("FACE_THRESHOLD", "0.363"))   # ngưỡng cosine khuyến nghị của SFace
+    face_required_for_remote_open = _bool("FACE_REQUIRED_FOR_REMOTE_OPEN", False)
+    # Kiểm tra "người thật" bằng thử thách quay mặt (chống ảnh tĩnh). Tắt mặc định; chưa hiệu chỉnh ngưỡng trên webcam thật nên
+    # cho chỉnh được qua biến môi trường, và phản hồi luôn kèm số đo để dễ chỉnh.
+    face_liveness = _bool("FACE_LIVENESS", False)
+    face_liveness_min_delta = float(os.getenv("FACE_LIVENESS_MIN_DELTA", "0.20"))   # độ lệch tư thế đầu tối thiểu giữa hai ảnh
+    face_turn_threshold = float(os.getenv("FACE_TURN_THRESHOLD", "0.30"))           # ảnh quay mặt vẫn phải là CÙNG một người
+    face_challenge_ttl = 60
+
     # API
     rate_limit_per_min = int(os.getenv("RATE_LIMIT_PER_MIN", "300"))   # mỗi IP
     hsts = _bool("HSTS", True)            # gắn Strict-Transport-Security cho phản hồi qua HTTPS

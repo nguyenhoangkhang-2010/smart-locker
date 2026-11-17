@@ -13,13 +13,13 @@ from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, JSONResponse
 
 from . import security, state
-from .api import auth, ops
+from .api import auth, biometric, ops
 from .bridge import Bridge
 from .config import settings
 from .db import migrate, query
 from .hub import hub
 from .kv import make_kv
-from .services import rules, sms
+from .services import anomaly, rules, sms
 from .transport import FakeBus
 
 logging.basicConfig(level=logging.INFO)
@@ -31,7 +31,10 @@ SWEEP_INTERVAL = 15  # giây
 def _sweeper(stop: threading.Event) -> None:
     while not stop.wait(SWEEP_INTERVAL):
         now = datetime.now(timezone.utc)
-        for job in (rules.sweep, rules.purge_old_events, sms.process_outbox):
+        jobs = [rules.sweep, rules.purge_old_events, sms.process_outbox]
+        if settings.anomaly_enabled:
+            jobs.append(anomaly.scan_all)
+        for job in jobs:
             try:
                 job(state.kv, now)
             except Exception:
@@ -88,6 +91,7 @@ async def security_middleware(request: Request, call_next):
 
 app.include_router(auth.router)
 app.include_router(ops.router)
+app.include_router(biometric.router)
 
 STATIC = Path(__file__).resolve().parent / "static"
 

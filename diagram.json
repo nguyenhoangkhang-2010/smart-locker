@@ -21,14 +21,15 @@
       "type": "wokwi-ili9341",
       "id": "tft",
       "top": -90,
-      "left": 640,
-      "attrs": {}
+      "left": 700,
+      "attrs": {},
+      "rotate": 90
     },
     {
       "type": "wokwi-potentiometer",
       "id": "pot",
-      "top": 300,
-      "left": 350,
+      "top": 260,
+      "left": 20,
       "attrs": {
         "value": "670"
       }
@@ -36,21 +37,21 @@
     {
       "type": "wokwi-74hc595",
       "id": "sr595",
-      "top": 330,
+      "top": 300,
       "left": 330,
       "attrs": {}
     },
     {
       "type": "wokwi-74hc165",
       "id": "sr165",
-      "top": 330,
-      "left": 560,
+      "top": 300,
+      "left": 640,
       "attrs": {}
     },
     {
       "type": "wokwi-led",
       "id": "led1",
-      "top": 130,
+      "top": 410,
       "left": 330,
       "attrs": {
         "color": "green"
@@ -59,7 +60,7 @@
     {
       "type": "wokwi-resistor",
       "id": "rl1",
-      "top": 215,
+      "top": 495,
       "left": 305,
       "attrs": {
         "value": "220"
@@ -69,14 +70,14 @@
     {
       "type": "wokwi-slide-switch",
       "id": "door1",
-      "top": 480,
+      "top": 640,
       "left": 330,
       "attrs": {}
     },
     {
       "type": "wokwi-resistor",
       "id": "rpu1",
-      "top": 560,
+      "top": 720,
       "left": 305,
       "attrs": {
         "value": "10000"
@@ -86,8 +87,8 @@
     {
       "type": "wokwi-led",
       "id": "led2",
-      "top": 130,
-      "left": 400,
+      "top": 410,
+      "left": 390,
       "attrs": {
         "color": "green"
       }
@@ -95,8 +96,8 @@
     {
       "type": "wokwi-resistor",
       "id": "rl2",
-      "top": 215,
-      "left": 375,
+      "top": 495,
+      "left": 365,
       "attrs": {
         "value": "220"
       },
@@ -105,15 +106,15 @@
     {
       "type": "wokwi-slide-switch",
       "id": "door2",
-      "top": 480,
-      "left": 400,
+      "top": 640,
+      "left": 390,
       "attrs": {}
     },
     {
       "type": "wokwi-resistor",
       "id": "rpu2",
-      "top": 560,
-      "left": 375,
+      "top": 720,
+      "left": 365,
       "attrs": {
         "value": "10000"
       },
@@ -122,8 +123,8 @@
     {
       "type": "wokwi-led",
       "id": "led3",
-      "top": 130,
-      "left": 470,
+      "top": 410,
+      "left": 450,
       "attrs": {
         "color": "green"
       }
@@ -131,8 +132,8 @@
     {
       "type": "wokwi-resistor",
       "id": "rl3",
-      "top": 215,
-      "left": 445,
+      "top": 495,
+      "left": 425,
       "attrs": {
         "value": "220"
       },
@@ -141,15 +142,15 @@
     {
       "type": "wokwi-slide-switch",
       "id": "door3",
-      "top": 480,
-      "left": 470,
+      "top": 640,
+      "left": 450,
       "attrs": {}
     },
     {
       "type": "wokwi-resistor",
       "id": "rpu3",
-      "top": 560,
-      "left": 445,
+      "top": 720,
+      "left": 425,
       "attrs": {
         "value": "10000"
       },
@@ -158,8 +159,8 @@
     {
       "type": "wokwi-led",
       "id": "led4",
-      "top": 130,
-      "left": 540,
+      "top": 410,
+      "left": 510,
       "attrs": {
         "color": "green"
       }
@@ -167,8 +168,8 @@
     {
       "type": "wokwi-resistor",
       "id": "rl4",
-      "top": 215,
-      "left": 515,
+      "top": 495,
+      "left": 485,
       "attrs": {
         "value": "220"
       },
@@ -177,15 +178,15 @@
     {
       "type": "wokwi-slide-switch",
       "id": "door4",
-      "top": 480,
-      "left": 540,
+      "top": 640,
+      "left": 510,
       "attrs": {}
     },
     {
       "type": "wokwi-resistor",
       "id": "rpu4",
-      "top": 560,
-      "left": 515,
+      "top": 720,
+      "left": 485,
       "attrs": {
         "value": "10000"
       },
@@ -194,8 +195,8 @@
     {
       "type": "wokwi-led",
       "id": "led5",
-      "top": 130,
-      "left": 610,
+      "top": 410,
+      "left": 570,
       "attrs": {
         "color": "green"
       }
@@ -203,8 +204,8 @@
     {
       "type": "wokwi-resistor",
       "id": "rl5",
-      "top": 215,
-      "left": 585,
+      "top": 495,
+      "left": 545,
       "attrs": {
         "value": "220"
       },
@@ -213,15 +214,15 @@
     {
       "type": "wokwi-slide-switch",
       "id": "door5",
-      "top": 480,
-      "left": 610,
+      "top": 640,
+      "left": 570,
       "attrs": {}
     },
     {
       "type": "wokwi-resistor",
       "id": "rpu5",
-      "top": 560,
-      "left": 585,
+      "top": 720,
+      "left": 545,
       "attrs": {
         "value": "10000"
       },
@@ -230,8 +231,8 @@
     {
       "type": "wokwi-led",
       "id": "led6",
-      "top": 130,
-      "left": 680,
+      "top": 410,
+      "left": 630,
       "attrs": {
         "color": "green"
       }
@@ -239,8 +240,8 @@
     {
       "type": "wokwi-resistor",
       "id": "rl6",
-      "top": 215,
-      "left": 655,
+      "top": 495,
+      "left": 605,
       "attrs": {
         "value": "220"
       },
@@ -249,15 +250,15 @@
     {
       "type": "wokwi-slide-switch",
       "id": "door6",
-      "top": 480,
-      "left": 680,
+      "top": 640,
+      "left": 630,
       "attrs": {}
     },
     {
       "type": "wokwi-resistor",
       "id": "rpu6",
-      "top": 560,
-      "left": 655,
+      "top": 720,
+      "left": 605,
       "attrs": {
         "value": "10000"
       },
@@ -266,8 +267,8 @@
     {
       "type": "wokwi-led",
       "id": "led7",
-      "top": 130,
-      "left": 750,
+      "top": 410,
+      "left": 690,
       "attrs": {
         "color": "green"
       }
@@ -275,8 +276,8 @@
     {
       "type": "wokwi-resistor",
       "id": "rl7",
-      "top": 215,
-      "left": 725,
+      "top": 495,
+      "left": 665,
       "attrs": {
         "value": "220"
       },
@@ -285,15 +286,15 @@
     {
       "type": "wokwi-slide-switch",
       "id": "door7",
-      "top": 480,
-      "left": 750,
+      "top": 640,
+      "left": 690,
       "attrs": {}
     },
     {
       "type": "wokwi-resistor",
       "id": "rpu7",
-      "top": 560,
-      "left": 725,
+      "top": 720,
+      "left": 665,
       "attrs": {
         "value": "10000"
       },
@@ -302,8 +303,8 @@
     {
       "type": "wokwi-led",
       "id": "led8",
-      "top": 130,
-      "left": 820,
+      "top": 410,
+      "left": 750,
       "attrs": {
         "color": "green"
       }
@@ -311,8 +312,8 @@
     {
       "type": "wokwi-resistor",
       "id": "rl8",
-      "top": 215,
-      "left": 795,
+      "top": 495,
+      "left": 725,
       "attrs": {
         "value": "220"
       },
@@ -321,15 +322,15 @@
     {
       "type": "wokwi-slide-switch",
       "id": "door8",
-      "top": 480,
-      "left": 820,
+      "top": 640,
+      "left": 750,
       "attrs": {}
     },
     {
       "type": "wokwi-resistor",
       "id": "rpu8",
-      "top": 560,
-      "left": 795,
+      "top": 720,
+      "left": 725,
       "attrs": {
         "value": "10000"
       },

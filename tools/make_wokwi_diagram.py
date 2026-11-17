@@ -28,6 +28,11 @@ def main() -> None:
             pass
     diagram = json.loads(TARGET.read_text(encoding="utf-8"))
     parts = [p for p in diagram["parts"] if p["id"] in KEEP]
+    for p in parts:   # bố cục: ESP32/keypad/TFT ở trên; chiết áp bên dưới ESP32; khóa và cửa dàn thành hai hàng phía dưới
+        if p["id"] == "tft":
+            p["left"], p["rotate"] = 700, 90     # firmware vẽ ngang (setRotation 1); linh kiện mặc định dọc nên xoay 90 độ
+        if p["id"] == "pot":
+            p["top"], p["left"] = 260, 20
     conns = [c for c in diagram["connections"] if not any(
         c[i].split(":")[0] not in KEEP and not c[i].startswith("$") for i in (0, 1))]
 
@@ -40,15 +45,15 @@ def main() -> None:
     def wire(a, b, color):
         conns.append([a, b, color, []])
 
-    # Hàng LED (xung khóa) ở trên, hàng công tắc cửa ở dưới; hai chip ở giữa
-    part("sr595", "wokwi-74hc595", 330, 330)
-    part("sr165", "wokwi-74hc165", 330, 560)
+    # Mọi thứ nằm dưới keypad (kết thúc ~y=230) và TFT: hai chip y=300, LED+điện trở y=400-500, công tắc cửa y=620-700
+    part("sr595", "wokwi-74hc595", 300, 330)
+    part("sr165", "wokwi-74hc165", 300, 640)
     for k in range(1, N + 1):
-        x = 330 + 70 * (k - 1)
-        part(f"led{k}", "wokwi-led", 130, x, color="green")
-        part(f"rl{k}", "wokwi-resistor", 215, x - 25, value="220", rotate=90)
-        part(f"door{k}", "wokwi-slide-switch", 480, x)
-        part(f"rpu{k}", "wokwi-resistor", 560, x - 25, value="10000", rotate=90)
+        x = 330 + 60 * (k - 1)
+        part(f"led{k}", "wokwi-led", 410, x, color="green")
+        part(f"rl{k}", "wokwi-resistor", 495, x - 25, value="220", rotate=90)
+        part(f"door{k}", "wokwi-slide-switch", 640, x)
+        part(f"rpu{k}", "wokwi-resistor", 720, x - 25, value="10000", rotate=90)
 
     # nguồn cho hai chip
     for chip in ("sr595", "sr165"):

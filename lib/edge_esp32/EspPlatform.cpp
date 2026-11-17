@@ -18,14 +18,16 @@ bool NvsStorage::save(const char* key, const void* data, size_t len) {
 }
 
 size_t NvsStorage::load(const char* key, void* out, size_t cap) {
+  if (!prefs.isKey(key)) return 0;       // chưa có (lần khởi động đầu): không để thư viện in lỗi NOT_FOUND
   size_t n = prefs.getBytesLength(key);
   if (n == 0 || n > cap) return 0;
   return prefs.getBytes(key, out, n) == n ? n : 0;
 }
 
-bool LittleFsStorage::begin() { return LittleFS.begin(true); }
+bool LittleFsStorage::begin() { mounted_ = LittleFS.begin(true); return mounted_; }
 
 bool LittleFsStorage::save(const char* key, const void* data, size_t len) {
+  if (!mounted_) return false;          // không có hệ thống tệp: tủ vẫn chạy nhưng không lưu qua lần khởi động lại
   String path = String("/") + key + ".bin";
   String tmp = path + ".tmp";
   File f = LittleFS.open(tmp, FILE_WRITE);
@@ -38,6 +40,7 @@ bool LittleFsStorage::save(const char* key, const void* data, size_t len) {
 }
 
 size_t LittleFsStorage::load(const char* key, void* out, size_t cap) {
+  if (!mounted_) return 0;
   String path = String("/") + key + ".bin";
   if (!LittleFS.exists(path)) return 0;
   File f = LittleFS.open(path, FILE_READ);

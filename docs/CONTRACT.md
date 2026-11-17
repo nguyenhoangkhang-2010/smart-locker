@@ -50,7 +50,7 @@ Loại sự kiện và ưu tiên trong Ring Buffer (khi đầy ghi đè từ th�
 |---|---|
 | 0 | `HEARTBEAT` (mỗi `heartbeatSec` = 300 s, kèm pin, RSSI, nhiệt độ) |
 | 1 | `DOOR_OPEN`, `DOOR_CLOSE` |
-| 2 | `DEPOSIT`, `PICKUP`, `TAMPER`, `OTP_LOCKOUT` |
+| 2 | `DEPOSIT`, `PICKUP`, `TAMPER`, `OTP_LOCKOUT`, `MAINT_OPEN` (8), `FP_LOCKOUT` (9): hai loại sau là phần mở rộng, xem `docs/EXTENSIONS.md` |
 
 Khi nào phát: `DOOR_OPEN`/`DOOR_CLOSE` mỗi lần cửa đổi trạng thái (đã chống rung). `TAMPER` thêm
 vào khi cửa mở mà không nằm trong cửa sổ mở hợp lệ. `DEPOSIT` khi cửa đóng lại sau lệnh gửi hàng.

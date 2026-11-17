@@ -26,13 +26,19 @@ struct LockerConfig {            // firmware điền từ config.h; test dùng m
   uint16_t debounceMs = 30;
   uint32_t heartbeatSec = 300;
   uint16_t cloudReplyTimeoutMs = 10000;
+  // Khởi đầu của seq khi KHÔNG có seq nào được lưu (flash mới/đã xóa/mô phỏng không giữ flash). Cloud loại trùng theo
+  // (tủ, seq) nên nếu seq quay về 1 thì sự kiện mới bị coi là trùng và mất. Firmware đặt số ngẫu nhiên; test để 0.
+  uint32_t seqStart = 0;
   uint8_t  medianWindow = 5;
   float    emaAlpha = 0.2f;
+  // Mở bảo trì bằng vân tay (mở rộng): phím D; sai quá maxWrongFinger lần thì khóa lockMinutes (lưu bền, rút điện không xóa)
+  uint8_t  maxWrongFinger = 5;
+  uint16_t fingerPollMs = 250;
   char     compSize[MAX_COMP + 1] = "SSSMMMLL";   // cỡ từng ngăn, dùng khi tự chọn ngăn lúc mất mạng
-  char keyDeposit = 'A', keyPickup = 'B', keyConfirm = '#', keyCancel = '*';
+  char keyDeposit = 'A', keyPickup = 'B', keyConfirm = '#', keyCancel = '*', keyMaintenance = 'D';
 };
 
-enum class Ui : uint8_t { Idle, DepositParcel, WaitDeposit, PickupComp, PickupOtp, WaitPickup, Message };
+enum class Ui : uint8_t { Idle, DepositParcel, WaitDeposit, PickupComp, PickupOtp, WaitPickup, Message, MaintFinger, MaintComp };
 
 class Locker {
  public:
@@ -42,6 +48,7 @@ class Locker {
   // Nạp OTP, bộ đếm sai, seq từ kho bền; vẽ màn hình chờ. wake cho biết vì sao tủ thức dậy
   // (sau ngủ sâu: so sánh trạng thái cửa với lúc đi ngủ; timer: gửi heartbeat ngay).
   void begin(WakeReason wake = WakeReason::ColdBoot);
+  void setSeqStart(uint32_t v) { cfg_.seqStart = v; }   // gọi trước begin()
   void tick();                   // gọi liên tục: cửa, hết hạn cửa sổ, hết giờ nhập, heartbeat
   void onKey(char key);
 
@@ -55,6 +62,7 @@ class Locker {
   void onRpcRevokeParcel(const char* hashHex);
   void onRpcSyncOccupancy(const uint8_t* comps, size_t n);   // cloud báo ngăn nào đang có hàng (đối soát)
 
+  void setFingerprint(Fingerprint* fp) { fp_ = fp; }   // không gọi = không có tính năng vân tay
   Ui ui() const { return ui_; }
   OtpTable& otps() { return otp_; }
   ParcelTable& parcelTable() { return parcels_; }
@@ -83,6 +91,11 @@ class Locker {
   OtpTable otp_;
   LockoutTracker lock_;
   ParcelTable parcels_;
+  Fingerprint* fp_;
+  LockoutTracker fpLock_;       // bộ đếm vân tay sai, khóa riêng "fplock"
+  uint32_t fpNextPollMs_;
+  bool fpFingerDown_;           // đã tính một lần sai cho ngón tay này: chờ nhấc ra mới tính tiếp
+  int fpSlot_;
   uint16_t occupied_;           // bit i = ngăn i đang có hàng (theo sự kiện của chính tủ + đối soát của cloud)
   bool critShown_;
 
@@ -113,6 +126,9 @@ class Locker {
   void confirmPickup(uint8_t comp, const char* code);
   bool pickupOffline(uint8_t comp, const char* code);
   void depositOffline(const char* code);
+  void startMaintenance();
+  void pollFingerprint(uint32_t now);
+  void confirmMaintenance(uint8_t comp);
   uint8_t pickFreeComp(char size) const;
   void saveOccupancy();
   void openFor(uint8_t comp, uint8_t kind, const char* parcel);

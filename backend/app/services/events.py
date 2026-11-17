@@ -102,6 +102,14 @@ def dispatch(kv, locker_id: str, ev, ts: datetime) -> list[Command]:
     elif kind == pb.TAMPER:
         alerts.raise_alert(kv, locker_id, comp, "TAMPER", "high",
                            f"Cửa ngăn {comp} của {locker_id} bị mở mà không có lệnh mở hợp lệ.")
+    elif kind == pb.MAINT_OPEN and comp:
+        # nhân viên mở ngăn bảo trì bằng vân tay: ghi vào audit_log (ai: ô vân tay trong tủ, ngăn nào, lúc nào)
+        with tx() as cur:
+            cur.execute("INSERT INTO audit_log (ts, user_id, action, locker_id, comp_no, detail) VALUES (%s, NULL, %s, %s, %s, %s)",
+                        (ts, "maintenance_open_fingerprint", locker_id, comp, ev.parcel_id or None))
+    elif kind == pb.FP_LOCKOUT:
+        alerts.raise_alert(kv, locker_id, None, "FINGERPRINT_LOCKOUT", "high",
+                           f"Tủ {locker_id}: quét vân tay sai quá số lần cho phép, chức năng mở bảo trì bị khóa.")
     elif kind == pb.OTP_LOCKOUT and comp:
         parcels.lock_comp(kv, locker_id, comp, "tủ báo nhập sai OTP quá số lần")
     return []

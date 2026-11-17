@@ -62,13 +62,15 @@ $env:MQTT_ENABLED = "false"
 Mở <http://localhost:8000/> và đăng nhập bằng `0900000001` (ADMIN), `...02` (OPERATOR), `...03` (SHIPPER), `...04` (CUSTOMER).
 ADMIN/OPERATOR vào trung tâm vận hành; SHIPPER tạo đơn (chọn tủ để gửi được cả khi tủ offline); CUSTOMER xem đơn và lấy hàng bằng OTP.
 
+Hướng dẫn demo từng chức năng, từng bước: [docs/HUONG_DAN_DEMO.md](docs/HUONG_DAN_DEMO.md).
+
 ## Chạy toàn bộ test
 
 ```powershell
 cd backend
-.venv\Scripts\python.exe -m pytest tests -q                 # 101 test: backend, RBAC, đầu cuối, chứng chỉ, power budget
+.venv\Scripts\python.exe -m pytest tests -q                 # 151 test: backend, RBAC, đầu cuối, chứng chỉ, power budget, phần mở rộng
 cd ..
-~\.platformio\penv\Scripts\pio.exe test -e native           # 63 test lõi firmware C++ ngay trên máy
+~\.platformio\penv\Scripts\pio.exe test -e native           # 77 test lõi firmware C++ ngay trên máy
 ~\.platformio\penv\Scripts\pio.exe run -e esp32dev          # biên dịch firmware ESP32
 ```
 
@@ -137,7 +139,7 @@ logic firmware thật qua broker giả.
 | `include/config.h` | mọi tham số firmware; `secrets.h`, `certs.h` (không commit) |
 | `lib/edge_core/` | logic tủ thuần C++ (Ring Buffer, sync, OTP, đơn offline, UI, cửa, ngủ sâu, OTA guard), **có test trên máy** |
 | `lib/edge_esp32/`, `src/main.cpp` | phần cứng ESP32: keypad, TFT, solenoid, MQTT, NVS, LittleFS, ngủ sâu, OTA |
-| `test/test_core/` | 63 test C++ (Unity); `tools/core_sim.cpp` chạy lõi như một chương trình dòng lệnh |
+| `test/test_core/` | 77 test C++ (Unity); `tools/core_sim.cpp` chạy lõi như một chương trình dòng lệnh |
 | `backend/` | API, cầu nối MQTT, luật, dashboard; `migrations/`, `tests/` |
 | `infra/` | docker-compose, cấu hình Mosquitto + ACL |
 | `tools/` | `power_budget.py`, `make_certs.py` (+ `--revoke`), `gen_test_vectors.py`, `core_sim.cpp`, `wokwi_*` |

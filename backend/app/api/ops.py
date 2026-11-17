@@ -11,6 +11,7 @@ import re
 
 from ..config import settings
 from ..services import lockers as locker_svc
+from .biometric import require_recent_verification
 from ..services import parcels
 from ..services.effects import Command
 
@@ -64,6 +65,7 @@ def _compartment_or_404(locker_id: str, comp_no: int) -> None:
 def remote_open(locker_id: str, comp_no: int, user=Depends(security.require("locker:remote_open"))):
     """Mở khẩn cấp từ xa. Mọi lệnh mở đều có vết trong audit_log."""
     _compartment_or_404(locker_id, comp_no)
+    require_recent_verification(user)          # chỉ khi FACE_REQUIRED_FOR_REMOTE_OPEN=true (mở rộng, tắt mặc định)
     security.audit(user, "remote_open", locker_id, comp_no)
     rid = state.bridge.send(Command(locker_id, "open", {"comp": comp_no, "reason": "remote"}))
     online = query("SELECT online FROM lockers WHERE locker_id = %s", (locker_id,))[0]["online"]
@@ -84,12 +86,17 @@ def customer_pickup(locker_id: str, comp_no: int, body: Pickup,
     if rows and rows[0]["recipient_phone"] != user["phone"]:
         raise HTTPException(403, "this parcel is not yours")
 
-    result = parcels.verify_pickup(state.kv, locker_id, comp_no, body.otp)
+    from ..services import face as face_svc
+
+    ok_key = face_svc.ok_key(user["sub"])
+    face_verified = settings.face_enabled and state.kv.exists(ok_key)        # tắt tính năng thì đơn cần khuôn mặt không mở được
+    result = parcels.verify_pickup(state.kv, locker_id, comp_no, body.otp, face_verified=face_verified)
     if result.ok:
+        state.kv.delete(ok_key)                      # mỗi lần xác minh khuôn mặt chỉ dùng cho một lần lấy hàng
         security.audit(user, "pickup_open", locker_id, comp_no)
         state.bridge.send_all(result.commands)
         return {"ok": True}
-    status_code = 423 if result.error == "LOCKED" else 400
+    status_code = 423 if result.error == "LOCKED" else 403 if result.error == "FACE_REQUIRED" else 400
     raise HTTPException(status_code, {"error": result.error, "left": result.left})
 
 
@@ -100,13 +107,24 @@ class NewParcel(BaseModel):
     recipient_phone: str
     size_code: str = "M"
     locker_id: Optional[str] = None
+    require_face: bool = False        # hàng giá trị cao: người nhận phải xác minh khuôn mặt (mở rộng)
 
 
 @router.post("/parcels", status_code=201)
 def create_parcel(body: NewParcel, user=Depends(security.require("parcel:deposit"))):
+    if body.require_face:
+        # Không thể bắt xác minh một người chưa từng đăng ký: báo ngay để shipper chọn lại (bỏ yêu cầu hoặc đợi người nhận đăng ký)
+        from ..services import face as face_svc
+
+        if not settings.face_enabled:
+            raise HTTPException(422, {"error": "FACE_DISABLED", "message": "tính năng khuôn mặt đang tắt (FACE_ENABLED=false)"})
+        status = face_svc.recipient_status(body.recipient_phone)
+        if status != "OK":
+            raise HTTPException(422, {"error": status, "message": "người nhận chưa có tài khoản" if status == "NO_ACCOUNT"
+                                      else "người nhận chưa đăng ký khuôn mặt"})
     try:
         parcels.create_parcel(body.parcel_id, body.recipient_phone, body.size_code, body.locker_id,
-                              created_by=user["sub"])
+                              created_by=user["sub"], require_face=body.require_face)
     except ValueError as exc:
         raise HTTPException(422, str(exc))
     except psycopg2.errors.UniqueViolation:
@@ -132,7 +150,7 @@ def my_parcels(user=Depends(security.current_user)):
     else:
         raise HTTPException(403, "no parcel permission")
     return query(f"""
-        SELECT p.parcel_id, p.status, p.size_code, p.locker_id, l.name AS locker_name, l.address,
+        SELECT p.parcel_id, p.status, p.size_code, p.locker_id, l.name AS locker_name, l.address, p.require_face,
                p.comp_no, p.created_at, p.deposited_at, p.picked_at, p.otp_expires_at
         FROM parcels p LEFT JOIN lockers l ON l.locker_id = p.locker_id
         WHERE {where} ORDER BY p.created_at DESC LIMIT 100""", (arg,))
@@ -167,7 +185,7 @@ def acknowledge(alert_id: int, user=Depends(security.require("dashboard:view")))
 
 
 EVENT_NAMES = {0: "UNKNOWN", 1: "DEPOSIT", 2: "PICKUP", 3: "DOOR_OPEN", 4: "DOOR_CLOSE",
-               5: "TAMPER", 6: "HEARTBEAT", 7: "OTP_LOCKOUT"}
+               5: "TAMPER", 6: "HEARTBEAT", 7: "OTP_LOCKOUT", 8: "MAINT_OPEN", 9: "FP_LOCKOUT"}
 
 
 @router.get("/events")
@@ -254,6 +272,32 @@ def locker_status(locker_id: str, user=Depends(security.require("dashboard:view"
     if not status:
         raise HTTPException(404, "locker not found")
     return status
+
+
+# ---------- phần mở rộng: phát hiện bất thường, dự báo pin ----------
+
+@router.post("/lockers/{locker_id}/anomaly/scan")
+def anomaly_scan(locker_id: str, user=Depends(security.require("admin:manage"))):
+    """Quét bất thường ngay cho một tủ (không cần bật ANOMALY_ENABLED); có cảnh báo thì ghi vào bảng alerts."""
+    from datetime import datetime, timezone
+
+    from ..services import anomaly
+
+    if not locker_svc.exists(locker_id):
+        raise HTTPException(404, "locker not found")
+    security.audit(user, "anomaly_scan", locker_id)
+    return anomaly.scan_locker(state.kv, locker_id, datetime.now(timezone.utc))
+
+
+@router.get("/lockers/{locker_id}/battery-forecast")
+def battery_forecast(locker_id: str, user=Depends(security.require("dashboard:view"))):
+    from datetime import datetime, timezone
+
+    from ..services import anomaly
+
+    if not locker_svc.exists(locker_id):
+        raise HTTPException(404, "locker not found")
+    return anomaly.battery_forecast(locker_id, datetime.now(timezone.utc))
 
 
 # ---------- quản trị tủ: OTA và thu hồi ----------

@@ -150,6 +150,10 @@
   td.time { white-space: nowrap; color: var(--ink-2); font-variant-numeric: tabular-nums; }
   .scroll { overflow-x: auto; }
   /* nhãn kiểu tem vận đơn */
+  .cam.mirror { transform: scaleX(-1); }
+  .cam { width: 100%; max-width: 320px; border-radius: 8px; border: 1px solid var(--border); background: #000; margin-bottom: 8px; }
+  .faceout { margin-top: 10px; min-height: 1.4em; font-size: 13px; }
+  .faceout.ok { color: var(--good); font-weight: 600; } .faceout.bad { color: var(--critical); font-weight: 600; }
   .badge { display: inline-flex; gap: 4px; align-items: center; font: 700 10.5px/17px var(--head-font); letter-spacing: .07em; text-transform: uppercase; border-radius: 3px; padding: 0 7px; white-space: nowrap; background: var(--wash); color: var(--ink-2); border: 1px solid transparent; }
   .b-blue { background: var(--info-bg); color: var(--info); border-color: color-mix(in srgb, var(--info) 30%, transparent); } .b-green { background: var(--good-bg); color: var(--good); border-color: color-mix(in srgb, var(--good) 30%, transparent); }
   .b-red { background: var(--crit-bg); color: var(--critical); border-color: color-mix(in srgb, var(--critical) 30%, transparent); } .b-amber { background: var(--warn-bg); color: #8a5a00; border-color: color-mix(in srgb, var(--warning) 45%, transparent); }
@@ -232,6 +236,7 @@
         <input id="mn-phone" placeholder="SĐT người nhận" required>
         <select id="mn-size"><option value="S">Nhỏ (S)</option><option value="M" selected>Vừa (M)</option><option value="L">Lớn (L)</option></select>
         <select id="mn-locker" aria-label="Tủ"></select>
+        <label class="sub wide"><input type="checkbox" id="mn-face"> Hàng giá trị cao: người nhận phải xác minh khuôn mặt (cần đã đăng ký)</label>
         <button class="btn primary wide" type="submit">Tạo đơn</button>
       </form>
     </div>
@@ -242,6 +247,19 @@
         <input id="mp-otp" class="wide" placeholder="Mã OTP (6 chữ số)" inputmode="numeric" pattern="[0-9]{6}" autocomplete="one-time-code" required>
         <button class="btn primary wide" type="submit">Mở ngăn</button>
       </form>
+    </div>
+    <div class="card" id="my-face" hidden>
+      <div class="head"><div><h2>Khuôn mặt của tôi (mở rộng)</h2><div class="sub" id="my-face-status">Hàng giá trị cao cần xác minh khuôn mặt trước khi mở ngăn</div></div></div>
+      <video id="my-cam" class="cam" muted playsinline hidden></video>
+      <div class="actions">
+        <button class="btn" id="my-cam-start">Bật camera</button>
+        <button class="btn" id="my-face-verify" disabled>Xác minh tôi</button>
+        <button class="btn danger" id="my-face-delete" hidden>Xóa khuôn mặt đã đăng ký</button>
+      </div>
+      <label class="sub"><input type="checkbox" id="my-consent"> Tôi đồng ý lưu vector đặc trưng khuôn mặt (không lưu ảnh)</label>
+      <label class="sub">Hoặc chọn ảnh có sẵn (đúng một khuôn mặt, nhìn thẳng): <input type="file" id="my-file" accept="image/*"></label>
+      <div class="actions"><button class="btn" id="my-face-enroll" disabled>Đăng ký khuôn mặt từ camera</button></div>
+      <div class="faceout" id="my-face-out" role="status" aria-live="polite"></div>
     </div>
   </section>
   <div class="card">
@@ -306,6 +324,7 @@
         <dl class="kv" id="detail"></dl>
         <div class="actions" id="admin-actions" hidden>
           <button class="btn primary" id="btn-ota">Cập nhật firmware (OTA)</button>
+          <button class="btn" id="btn-anomaly">Quét bất thường</button>
           <button class="btn danger" id="btn-revoke">Thu hồi tủ (bị mất cắp)</button>
         </div>
       </div>
@@ -319,6 +338,32 @@
       </div>
     </section>
 
+    <section class="row3" id="face-row">
+      <div class="card" id="face-card">
+        <div class="head"><div><h2>Xác minh khuôn mặt (mở rộng)</h2><div class="sub">Lớp xác thực thứ hai cho nhân viên; dùng webcam của máy này</div></div></div>
+        <video id="cam" class="cam" muted playsinline hidden></video>
+        <div class="actions">
+          <button class="btn" id="cam-start">Bật camera</button>
+          <button class="btn" id="face-verify" disabled>Xác minh tôi</button>
+        </div>
+        <div class="faceout" id="face-out" role="status" aria-live="polite"></div>
+        <form class="form" id="face-enroll" hidden>
+          <input id="fe-phone" placeholder="SĐT nhân viên cần đăng ký" required>
+          <label class="sub"><input type="checkbox" id="fe-consent"> Người này đã đồng ý đăng ký sinh trắc</label>
+          <label class="sub wide">Hoặc chọn ảnh có sẵn (đúng một khuôn mặt, nhìn thẳng): <input type="file" id="fe-file" accept="image/*"></label>
+          <button class="btn wide" type="submit" id="fe-go" disabled>Đăng ký khuôn mặt từ camera</button>
+        </form>
+      </div>
+      <div class="card">
+        <div class="head"><div><h2>Về dữ liệu sinh trắc</h2></div></div>
+        <div class="sub" style="font-size:13px;line-height:1.6;color:var(--ink-2)">
+          Chỉ lưu vector đặc trưng 128 số, không lưu ảnh. Chỉ đăng ký khi người đó đồng ý và có thể xóa bất cứ lúc nào.
+          Xác minh đúng có hiệu lực 2 phút; sai 5 lần khóa 15 phút. Mô hình không có kiểm tra người thật, nên ảnh in có thể đánh lừa:
+          đây là lớp phụ, không thay OTP. Tính năng tắt mặc định (FACE_ENABLED).
+        </div>
+      </div>
+    </section>
+
     <section class="row3" id="admin-row" hidden>
       <div class="card" id="parcel-card" hidden>
         <div class="head"><div><h2>Tạo đơn gửi hàng</h2><div class="sub">Shipper nhập mã đơn này trên keypad của tủ</div></div></div>
@@ -327,6 +372,7 @@
           <input id="pf-phone" placeholder="SĐT người nhận" required>
           <select id="pf-size"><option value="S">Nhỏ (S)</option><option value="M" selected>Vừa (M)</option><option value="L">Lớn (L)</option></select>
           <select id="pf-locker" aria-label="Tủ"><option value="">Tủ nào cũng được</option></select>
+          <label class="sub wide"><input type="checkbox" id="pf-face"> Hàng giá trị cao: người nhận phải xác minh khuôn mặt</label>
           <button class="btn primary wide" type="submit">Tạo đơn</button>
         </form>
       </div>
@@ -362,8 +408,8 @@ function dwell(sec) {
   return d ? `${d} ngày ${hh} giờ` : hh ? `${hh} giờ ${m} phút` : `${m} phút`;
 }
 
-const EVENT_VN = { DEPOSIT: "Gửi hàng", PICKUP: "Lấy hàng", DOOR_OPEN: "Mở cửa", DOOR_CLOSE: "Đóng cửa", TAMPER: "Cửa bị cạy", HEARTBEAT: "Heartbeat", OTP_LOCKOUT: "Khóa ngăn", UNKNOWN: "Không rõ" };
-const ALERT_VN = { TAMPER: "Cửa bị mở trái phép", DOOR_OPEN_TOO_LONG: "Cửa mở quá lâu", OTP_LOCKOUT: "Ngăn bị khóa (sai OTP)", DEVICE_OFFLINE: "Tủ mất kết nối", BUFFER_CRITICAL: "Bộ đệm sự kiện đầy", COMMAND_FAILED: "Tủ từ chối lệnh", DEPOSIT_CONFLICT: "Gửi hàng offline bị xung đột ngăn", SMS_FAILED: "Không gửi được tin nhắn OTP" };
+const EVENT_VN = { DEPOSIT: "Gửi hàng", PICKUP: "Lấy hàng", DOOR_OPEN: "Mở cửa", DOOR_CLOSE: "Đóng cửa", TAMPER: "Cửa bị cạy", HEARTBEAT: "Heartbeat", OTP_LOCKOUT: "Khóa ngăn", MAINT_OPEN: "Mở bảo trì (vân tay)", FP_LOCKOUT: "Khóa vân tay", UNKNOWN: "Không rõ" };
+const ALERT_VN = { TAMPER: "Cửa bị mở trái phép", DOOR_OPEN_TOO_LONG: "Cửa mở quá lâu", OTP_LOCKOUT: "Ngăn bị khóa (sai OTP)", DEVICE_OFFLINE: "Tủ mất kết nối", BUFFER_CRITICAL: "Bộ đệm sự kiện đầy", COMMAND_FAILED: "Tủ từ chối lệnh", DEPOSIT_CONFLICT: "Gửi hàng offline bị xung đột ngăn", SMS_FAILED: "Không gửi được tin nhắn OTP", ANOMALY: "Chỉ số bất thường (mô hình)", FACE_MISMATCH: "Xác minh khuôn mặt thất bại", FINGERPRINT_LOCKOUT: "Mở bảo trì bị khóa (vân tay sai)" };
 const PARCEL_VN = { CREATED: "Chờ gửi vào tủ", DEPOSITED: "Đang chờ lấy", PICKED: "Đã lấy", EXPIRED: "Hết hạn" };
 const SEV = { high: { label: "Cao", icon: "▲", color: "var(--critical)" }, medium: { label: "Trung bình", icon: "◆", color: "var(--serious)" }, low: { label: "Thấp", icon: "●", color: "var(--warning)" } };
 // Mỗi trạng thái có biểu tượng + chữ, không chỉ màu (người mù màu vẫn phân biệt được)
@@ -394,7 +440,7 @@ async function api(path, opts = {}, retry = true) {
   if (!res.ok) { const e = new Error(path + " " + res.status); e.status = res.status; e.body = await res.json().catch(() => ({})); throw e; }
   return res.json();
 }
-function showLogin() { stopLive(); $("#app").hidden = true; $("#my").hidden = true; $("#login").hidden = false; state.access = state.refresh = null; state.view = null; try { $("#phone").focus(); } catch (e) { /* chưa hiển thị */ } }
+function showLogin() { stopCam(); stopLive(); $("#app").hidden = true; $("#my").hidden = true; $("#login").hidden = false; state.access = state.refresh = null; state.view = null; try { $("#phone").focus(); } catch (e) { /* chưa hiển thị */ } }
 function toast(msg) { const t = h("div", { class: "toast", role: "status" }, msg); document.body.append(t); setTimeout(() => t.remove(), 3500); }
 
 $("#login-form").addEventListener("submit", async (e) => {
@@ -574,14 +620,157 @@ function renderComps(list, lockerName) {
       can("locker:remote_open") ? h("button", { class: "btn danger", onclick: () => remoteOpen(c.comp_no) }, "Mở khẩn cấp") : null);
   }));
 }
+/* ---------- xác minh khuôn mặt bằng webcam (mở rộng; backend tắt mặc định) ---------- */
+let camStream = null;
+function stopCam() { if (camStream) { camStream.getTracks().forEach((t) => t.stop()); camStream = null; } document.querySelectorAll("video.cam").forEach((v) => { v.srcObject = null; v.hidden = true; }); }
+function faceMsg(text, cls, sel = "#face-out") { const o = $(sel); o.textContent = text; o.className = "faceout" + (cls ? " " + cls : ""); }
+function snapshot(sel = "#cam") {
+  const v = $(sel), w = Math.min(640, v.videoWidth), h = Math.round(v.videoHeight * w / v.videoWidth), c = document.createElement("canvas");
+  c.width = w; c.height = h; c.getContext("2d").drawImage(v, 0, 0, w, h);
+  return c.toDataURL("image/jpeg", 0.9).split(",")[1];
+}
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+async function fileToB64(input) {
+  const file = input.files && input.files[0]; if (!file) return null;
+  const img = new Image(); img.src = URL.createObjectURL(file); await img.decode();
+  const w = Math.min(640, img.width), hgt = Math.round(img.height * w / img.width), c = document.createElement("canvas");
+  c.width = w; c.height = hgt; c.getContext("2d").drawImage(img, 0, 0, w, hgt); URL.revokeObjectURL(img.src);
+  return c.toDataURL("image/jpeg", 0.9).split(",")[1];
+}
+// Xác minh bằng camera. Nếu hệ thống bật kiểm tra người thật (FACE_LIVENESS): server ra thử thách quay mặt ngẫu nhiên,
+// ta chụp ảnh nhìn thẳng rồi vài ảnh lúc quay mặt, gửi kèm nonce.
+async function verifyWithCamera(videoSel, outSel) {
+  const me = await api("/biometric/face/me");
+  const body = {};
+  if (me.liveness) {
+    const chal = await api("/biometric/face/challenge", { method: "POST" });
+    const side = chal.direction === "right" ? "PHẢI" : "TRÁI";
+    faceMsg("Nhìn thẳng vào camera và giữ yên...", "", outSel); await sleep(1500);
+    body.image_b64 = snapshot(videoSel);
+    faceMsg(`Bây giờ quay mặt sang bên ${side} của bạn, giữ khoảng 2 giây`, "", outSel); await sleep(800);
+    body.turn_b64 = []; for (let i = 0; i < 4; i++) { await sleep(500); body.turn_b64.push(snapshot(videoSel)); }
+    body.nonce = chal.nonce;
+    faceMsg("Đang xác minh...", "", outSel);
+  } else { body.image_b64 = snapshot(videoSel); }
+  return api("/biometric/face/verify", { method: "POST", body: JSON.stringify(body) });
+}
+function liveText(r) {
+  const lv = r.liveness; if (!lv) return "";
+  return lv.passed ? ` · quay mặt đạt (lệch ${lv.delta})` : (lv.same_person ? ` · quay chưa đủ: lệch ${lv.delta}, cần ${lv.needed === "right" ? "≤ -" : "≥ "}${lv.min_delta}` : " · ảnh quay mặt không phải cùng một người");
+}
+function faceError(e) {
+  const d = (e.body && e.body.detail) || {};
+  const code = typeof d === "object" ? d.error : "";
+  if (e.status === 404 && typeof d === "string" && d.includes("disabled")) return "Tính năng khuôn mặt đang tắt (đặt FACE_ENABLED=true trong backend/.env rồi chạy lại backend)";
+  if (e.status === 404) return "Bạn chưa được đăng ký khuôn mặt";
+  if (e.status === 403) return "Không đủ quyền";
+  if (e.status === 429) return "Sai quá nhiều lần, thử lại sau 15 phút";
+  if (code === "CHALLENGE_EXPIRED") return "Thử thách hết hạn hoặc đã dùng, bấm xác minh lại";
+  if (code === "NO_FACE") return "Không thấy khuôn mặt trong ảnh, nhìn thẳng vào camera";
+  if (code === "MANY_FACES") return "Có nhiều hơn một khuôn mặt trong ảnh";
+  if (code === "MODEL_MISSING") return "Thiếu mô hình khuôn mặt trong backend/models/face";
+  return "Lỗi: " + (e.message || e.status);
+}
+$("#cam-start").addEventListener("click", async () => {
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+    const v = $("#cam"); v.srcObject = camStream; v.hidden = false; await v.play();
+    await syncMirror("#cam"); $("#face-verify").disabled = false; updateOpsEnroll(); faceMsg("Camera đã bật", "");
+  } catch (e) { faceMsg("Không bật được camera: cho phép quyền camera cho trang này (chỉ chạy được trên localhost hoặc HTTPS)", "bad"); }
+});
+function updateOpsEnroll() { $("#fe-go").disabled = !($("#fe-consent").checked && (camStream || $("#fe-file").files.length)); }
+$("#face-verify").addEventListener("click", async () => {
+  faceMsg("Đang xác minh...", "");
+  try {
+    const r = await verifyWithCamera("#cam", "#face-out");
+    if (r.match) faceMsg(`Khớp (độ giống ${r.score})${liveText(r)}. Có hiệu lực ${r.valid_for_seconds} giây cho thao tác mở khẩn cấp`, "ok");
+    else faceMsg(`Không khớp (độ giống ${r.score}, cần từ 0,363)${liveText(r)}. Đã ghi cảnh báo`, "bad");
+    refresh();
+  } catch (e) { faceMsg(faceError(e), "bad"); }
+});
+$("#fe-consent").addEventListener("change", updateOpsEnroll);
+$("#fe-file").addEventListener("change", updateOpsEnroll);
+$("#face-enroll").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  try {
+    const image = (await fileToB64($("#fe-file"))) || snapshot();
+    await api("/biometric/face/enroll", { method: "POST", body: JSON.stringify({ phone: $("#fe-phone").value, image_b64: image, consent: $("#fe-consent").checked }) });
+    faceMsg(`Đã đăng ký khuôn mặt cho ${$("#fe-phone").value} (chỉ lưu vector, không lưu ảnh)`, "ok");
+  } catch (err) { faceMsg(faceError(err), "bad"); }
+});
+
+
+function parcelCreateError(err) {
+  const d = (err.body && err.body.detail) || {};
+  if (err.status === 409) return "Mã đơn đã tồn tại";
+  if (d.error === "NO_ACCOUNT") return "Người nhận chưa có tài khoản: bỏ chọn yêu cầu khuôn mặt hoặc nhờ họ đăng ký";
+  if (d.error === "NOT_ENROLLED") return "Người nhận chưa đăng ký khuôn mặt: bỏ chọn yêu cầu hoặc nhờ họ đăng ký trước";
+  if (d.error === "FACE_DISABLED") return "Tính năng khuôn mặt đang tắt (FACE_ENABLED=false)";
+  return "Không tạo được đơn";
+}
+
+async function refreshFaceStatus() {
+  try {
+    const r = await api("/biometric/face/me");
+    $("#my-face-status").textContent = r.enrolled ? "Đã đăng ký khuôn mặt. Hàng giá trị cao gửi cho bạn cần xác minh trước khi mở ngăn" : "Chưa đăng ký khuôn mặt (không bắt buộc, trừ khi có hàng giá trị cao)";
+    $("#my-face-delete").hidden = !r.enrolled;
+  } catch (e) {
+    if (e.status === 404) { $("#my-face-status").textContent = "Tính năng khuôn mặt đang tắt trên hệ thống"; $("#my-face").querySelectorAll("button").forEach((b) => { b.disabled = true; }); }
+  }
+}
+function updateMyEnroll() { $("#my-face-enroll").disabled = !($("#my-consent").checked && (camStream || $("#my-file").files.length)); }
+async function syncMirror(sel) {                       // xem trước dạng gương khi có thử thách quay mặt, để "bên phải của bạn" đúng bên màn hình
+  try { const me = await api("/biometric/face/me"); $(sel).classList.toggle("mirror", !!me.liveness); } catch (e) { /* tính năng tắt */ }
+}
+$("#my-cam-start").addEventListener("click", async () => {
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+    const v = $("#my-cam"); v.srcObject = camStream; v.hidden = false; await v.play();
+    await syncMirror("#my-cam"); $("#my-face-verify").disabled = false; updateMyEnroll(); faceMsg("Camera đã bật", "", "#my-face-out");
+  } catch (e) { faceMsg("Không bật được camera: cho phép quyền camera (chỉ chạy được trên localhost hoặc HTTPS)", "bad", "#my-face-out"); }
+});
+$("#my-consent").addEventListener("change", updateMyEnroll);
+$("#my-file").addEventListener("change", updateMyEnroll);
+$("#my-face-enroll").addEventListener("click", async () => {
+  try {
+    const image = (await fileToB64($("#my-file"))) || snapshot("#my-cam");
+    await api("/biometric/face/me", { method: "POST", body: JSON.stringify({ image_b64: image, consent: $("#my-consent").checked }) });
+    faceMsg("Đã đăng ký khuôn mặt của bạn (chỉ lưu vector, không lưu ảnh)", "ok", "#my-face-out"); refreshFaceStatus();
+  } catch (err) { faceMsg(faceError(err), "bad", "#my-face-out"); }
+});
+$("#my-face-verify").addEventListener("click", async () => {
+  faceMsg("Đang xác minh...", "", "#my-face-out");
+  try {
+    const r = await verifyWithCamera("#my-cam", "#my-face-out");
+    if (r.match) faceMsg(`Khớp (độ giống ${r.score})${liveText(r)}. Có hiệu lực ${r.valid_for_seconds} giây: nhập OTP và mở ngăn ngay`, "ok", "#my-face-out");
+    else faceMsg(`Không khớp (độ giống ${r.score}, cần từ 0,363)${liveText(r)}`, "bad", "#my-face-out");
+  } catch (err) { faceMsg(faceError(err), "bad", "#my-face-out"); }
+});
+$("#my-face-delete").addEventListener("click", async () => {
+  if (!confirm("Xóa khuôn mặt đã đăng ký? Hàng giá trị cao gửi cho bạn sau này sẽ không tạo được cho tới khi đăng ký lại.")) return;
+  try { await api("/biometric/face/me", { method: "DELETE" }); faceMsg("Đã xóa dữ liệu khuôn mặt của bạn", "ok", "#my-face-out"); refreshFaceStatus(); }
+  catch (err) { faceMsg(faceError(err), "bad", "#my-face-out"); }
+});
+
 async function remoteOpen(comp) {
   if (!confirm(`Mở khẩn cấp ngăn ${comp} của ${state.locker}? Thao tác được ghi vào nhật ký kiểm toán.`)) return;
-  try { const r = await api(`/lockers/${encodeURIComponent(state.locker)}/compartments/${comp}/open`, { method: "POST" }); toast(r.locker_online ? `Đã gửi lệnh mở ngăn ${comp}` : `Đã gửi lệnh, nhưng tủ đang offline hoặc đang ngủ: tủ nhận khi thức dậy`); } catch (e) { toast("Không gửi được lệnh mở"); }
+  try { const r = await api(`/lockers/${encodeURIComponent(state.locker)}/compartments/${comp}/open`, { method: "POST" }); toast(r.locker_online ? `Đã gửi lệnh mở ngăn ${comp}` : `Đã gửi lệnh, nhưng tủ đang offline hoặc đang ngủ: tủ nhận khi thức dậy`); } catch (e) {
+    if (e.status === 403 && e.body && e.body.detail && e.body.detail.error === "FACE_REQUIRED") { toast("Cần xác minh khuôn mặt trước (thẻ bên dưới)"); $("#face-card").scrollIntoView({ behavior: "smooth", block: "center" }); }
+    else toast("Không gửi được lệnh mở");
+  }
 }
-function renderDetail(l, st) {
+function forecastText(f) {
+  if (!f) return "không đọc được";
+  if (f.status === "insufficient_data") return `chưa đủ dữ liệu (${f.points} điểm)`;
+  if (f.status === "stable") return "ổn định (không giảm)";
+  if (f.status === "noisy") return `giảm ${Math.abs(f.slope_mv_per_day)} mV/ngày nhưng dao động nhiều, chưa chắc`;
+  return f.days_left === 0 ? "đã dưới ngưỡng pin" : `giảm ${Math.abs(f.slope_mv_per_day)} mV/ngày, còn khoảng ${f.days_left} ngày tới ${(f.floor_mv / 1000).toFixed(1)} V`;
+}
+function renderDetail(l, st, fc) {
   const rows = [["Trạng thái", l ? lockerState(l).icon + " " + lockerState(l).label : "–"], ["Firmware", l && l.fw_version || "chưa báo"],
     ["Thấy lần cuối", l && l.last_seen ? dt(l.last_seen) : "chưa"], ["Địa chỉ", l && l.address || "–"]];
   if (st) { rows.push(["Lấp đầy (Redis)", `${Math.round(st.fill_rate * 100)}% · ${st.occupied}/${st.compartments} ngăn`]); rows.push(["Bộ đệm sự kiện", st.buffer_critical ? "⚠ ĐẦY, sự kiện mới bị từ chối" : "bình thường"]); }
+  rows.push(["Dự báo pin (mở rộng)", forecastText(fc)]);
   const kids = rows.flatMap(([k, v]) => [h("dt", {}, k), h("dd", {}, v)]);
   if (l && l.lat != null) kids.push(h("dt", {}, "Vị trí"), h("dd", {}, h("a", { href: `https://www.openstreetmap.org/?mlat=${l.lat}&mlon=${l.lon}#map=17/${l.lat}/${l.lon}`, target: "_blank", rel: "noopener noreferrer" }, `${l.lat.toFixed(4)}, ${l.lon.toFixed(4)} (mở OpenStreetMap)`)));
   $("#detail").replaceChildren(...kids);
@@ -611,8 +800,8 @@ async function refresh() {
       api(`/alerts?limit=100${$("#unacked").checked ? "&acknowledged=false" : ""}`), api(`/events?limit=40${state.locker ? "&locker_id=" + encodeURIComponent(state.locker) : ""}`)]);
     renderSummary(sm); renderLockers(lockers);
     const chosen = lockers.find((l) => l.locker_id === state.locker);
-    const [comps, st] = state.locker ? await Promise.all([api(`/lockers/${encodeURIComponent(state.locker)}/compartments`), api(`/lockers/${encodeURIComponent(state.locker)}/status`).catch(() => null)]) : [[], null];
-    renderComps(comps, (chosen || {}).name); renderDetail(chosen, st);
+    const [comps, st, fc] = state.locker ? await Promise.all([api(`/lockers/${encodeURIComponent(state.locker)}/compartments`), api(`/lockers/${encodeURIComponent(state.locker)}/status`).catch(() => null), api(`/lockers/${encodeURIComponent(state.locker)}/battery-forecast`).catch(() => null)]) : [[], null, null];
+    renderComps(comps, (chosen || {}).name); renderDetail(chosen, st, fc);
     const rows = hourlyRows(hourly), label = (r) => `${dt(r.hour).slice(0, 5)} ${pad(r.hour.getHours())}h`;
     setChart("hourly", rows, drawHourly, tableOf(["Giờ", "Gửi", "Lấy"], rows.map((r) => [label(r), r.deposits, r.pickups])));
     setChart("battery", rows, drawBattery, tableOf(["Giờ", "Pin thấp nhất (V)"], rows.filter((r) => r.min_battery_mv != null).map((r) => [label(r), (r.min_battery_mv / 1000).toFixed(2)])));
@@ -629,14 +818,21 @@ $("#range").addEventListener("click", (e) => { const b = e.target.closest("butto
 $("#unacked").addEventListener("change", refresh);
 $("#parcel-form").addEventListener("submit", async (e) => {
   e.preventDefault();
-  try { await api("/parcels", { method: "POST", body: JSON.stringify({ parcel_id: $("#pf-id").value, recipient_phone: $("#pf-phone").value, size_code: $("#pf-size").value, locker_id: $("#pf-locker").value || null }) }); toast(`Đã tạo đơn ${$("#pf-id").value}`); $("#pf-id").value = ""; refresh(); }
-  catch (err) { toast(err.status === 409 ? "Mã đơn đã tồn tại" : "Không tạo được đơn"); }
+  try { await api("/parcels", { method: "POST", body: JSON.stringify({ parcel_id: $("#pf-id").value, recipient_phone: $("#pf-phone").value, size_code: $("#pf-size").value, locker_id: $("#pf-locker").value || null, require_face: $("#pf-face").checked }) }); toast(`Đã tạo đơn ${$("#pf-id").value}`); $("#pf-id").value = ""; refresh(); }
+  catch (err) { toast(parcelCreateError(err)); }
 });
 $("#btn-ota").addEventListener("click", async () => {
   const url = prompt(`URL firmware (https://...) cho ${state.locker}:`); if (!url) return;
   const sha = prompt("SHA-256 của file firmware (64 ký tự hex):"); if (!sha) return;
   try { await api(`/lockers/${encodeURIComponent(state.locker)}/ota`, { method: "POST", body: JSON.stringify({ url, sha256: sha.trim() }) }); toast("Đã gửi lệnh OTA. Tủ tải, kiểm SHA-256, ghi phân vùng còn lại rồi khởi động lại"); }
   catch (e) { toast(e.status === 422 ? "URL phải là https:// và SHA-256 đủ 64 ký tự hex" : "Không gửi được lệnh OTA"); }
+});
+$("#btn-anomaly").addEventListener("click", async () => {
+  try {
+    const r = await api(`/lockers/${encodeURIComponent(state.locker)}/anomaly/scan`, { method: "POST" });
+    toast(r.flagged.length ? `Phát hiện ${r.flagged.length} giờ bất thường, đã tạo cảnh báo` : r.skipped ? `Không thấy gì bất thường (${r.skipped})` : "Không thấy gì bất thường");
+    refresh();
+  } catch (e) { toast("Không quét được"); }
 });
 $("#btn-revoke").addEventListener("click", async () => {
   if (!confirm(`Thu hồi ${state.locker}? Backend sẽ bỏ qua mọi dữ liệu của tủ này. Chỉ dùng khi tủ bị đánh cắp/mất.`)) return;
@@ -667,6 +863,7 @@ function startOps() {
   $("#parcel-card").hidden = !can("parcel:deposit"); $("#sms-card").hidden = !can("admin:manage");
   $("#admin-row").hidden = $("#parcel-card").hidden && $("#sms-card").hidden;
   $("#admin-actions").hidden = !can("admin:manage");
+  $("#face-enroll").hidden = !can("biometric:manage");
   if (can("parcel:deposit")) api("/lockers/available").then((ls) => $("#pf-locker").replaceChildren(h("option", { value: "" }, "Tủ nào cũng được"), ...ls.map((l) => h("option", { value: l.locker_id }, l.name)))).catch(() => {});
   refresh(); live.want = true; connectLive(); schedulePoll();
 }
@@ -677,25 +874,26 @@ async function loadMine() {
     const list = await api("/my/parcels");
     $("#my-sub").textContent = can("parcel:pickup") ? "Đơn gửi tới số điện thoại của bạn" : "Đơn do bạn tạo";
     $("#my-list").replaceChildren(list.length ? tableOf(["Mã đơn", "Trạng thái", "Tủ", "Ngăn", "Tạo lúc", "Gửi vào tủ", "Đã lấy", "OTP hết hạn"],
-      list.map((p) => [p.parcel_id, pill(PARCEL_VN[p.status] || p.status, PARCEL_COLOR[p.status]), p.locker_name ? `${p.locker_name}${p.address ? " · " + p.address : ""}` : "chưa gán", p.comp_no || "", dt(p.created_at), p.deposited_at ? dt(p.deposited_at) : "", p.picked_at ? dt(p.picked_at) : "", p.status === "DEPOSITED" && p.otp_expires_at ? dt(p.otp_expires_at) : ""]))
+      list.map((p) => [p.parcel_id + (p.require_face ? " · cần khuôn mặt" : ""), pill(PARCEL_VN[p.status] || p.status, PARCEL_COLOR[p.status]), p.locker_name ? `${p.locker_name}${p.address ? " · " + p.address : ""}` : "chưa gán", p.comp_no || "", dt(p.created_at), p.deposited_at ? dt(p.deposited_at) : "", p.picked_at ? dt(p.picked_at) : "", p.status === "DEPOSITED" && p.otp_expires_at ? dt(p.otp_expires_at) : ""]))
       : h("div", { class: "empty" }, "Chưa có đơn nào"));
     const waiting = list.filter((p) => p.status === "DEPOSITED");
-    $("#mp-parcel").replaceChildren(...(waiting.length ? waiting.map((p) => h("option", { value: JSON.stringify([p.locker_id, p.comp_no]) }, `Đơn ${p.parcel_id} · ${p.locker_name || p.locker_id} · ngăn ${p.comp_no}`)) : [h("option", { value: "" }, "Chưa có đơn nào đang chờ lấy")]));
+    $("#mp-parcel").replaceChildren(...(waiting.length ? waiting.map((p) => h("option", { value: JSON.stringify([p.locker_id, p.comp_no]) }, `Đơn ${p.parcel_id} · ${p.locker_name || p.locker_id} · ngăn ${p.comp_no}${p.require_face ? " · cần khuôn mặt" : ""}`)) : [h("option", { value: "" }, "Chưa có đơn nào đang chờ lấy")]));
   } catch (e) { if (e.message !== "401") toast("Không tải được danh sách đơn"); }
 }
 function startMy() {
   state.view = "my";
   $("#login").hidden = true; $("#app").hidden = true; $("#my").hidden = false;
   $("#my-who").replaceChildren(state.claims.phone, h("span", { class: "role" }, state.claims.role));
-  $("#my-new").hidden = !can("parcel:deposit"); $("#my-pick").hidden = !can("parcel:pickup");
+  $("#my-new").hidden = !can("parcel:deposit"); $("#my-pick").hidden = !can("parcel:pickup"); $("#my-face").hidden = !can("parcel:pickup");
+  if (can("parcel:pickup")) refreshFaceStatus();
   if (can("parcel:deposit")) api("/lockers/available").then((ls) => $("#mn-locker").replaceChildren(h("option", { value: "" }, "Tủ nào cũng được"), ...ls.map((l) => h("option", { value: l.locker_id }, `${l.name}${l.address ? " · " + l.address : ""}`)))).catch(() => {});
   loadMine();
 }
 $("#my-reload").addEventListener("click", loadMine);
 $("#my-new-form").addEventListener("submit", async (e) => {
   e.preventDefault();
-  try { await api("/parcels", { method: "POST", body: JSON.stringify({ parcel_id: $("#mn-id").value, recipient_phone: $("#mn-phone").value, size_code: $("#mn-size").value, locker_id: $("#mn-locker").value || null }) }); toast(`Đã tạo đơn ${$("#mn-id").value}`); $("#mn-id").value = ""; loadMine(); }
-  catch (err) { toast(err.status === 409 ? "Mã đơn đã tồn tại" : "Không tạo được đơn"); }
+  try { await api("/parcels", { method: "POST", body: JSON.stringify({ parcel_id: $("#mn-id").value, recipient_phone: $("#mn-phone").value, size_code: $("#mn-size").value, locker_id: $("#mn-locker").value || null, require_face: $("#mn-face").checked }) }); toast(`Đã tạo đơn ${$("#mn-id").value}`); $("#mn-id").value = ""; loadMine(); }
+  catch (err) { toast(parcelCreateError(err)); }
 });
 $("#my-pick-form").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -704,7 +902,7 @@ $("#my-pick-form").addEventListener("submit", async (e) => {
   try { await api(`/lockers/${encodeURIComponent(locker)}/compartments/${comp}/pickup`, { method: "POST", body: JSON.stringify({ otp: $("#mp-otp").value }) }); toast(`Đã mở ngăn ${comp}. Hãy lấy hàng rồi đóng cửa`); $("#mp-otp").value = ""; setTimeout(loadMine, 5000); }
   catch (err) {
     const d = (err.body && err.body.detail) || {};
-    toast(err.status === 423 ? "Ngăn đang bị khóa 15 phút vì nhập sai nhiều lần" : d.error === "WRONG_OTP" ? `Sai mã OTP, còn ${d.left} lần thử` : d.error === "EXPIRED" ? "Mã OTP đã hết hạn" : err.status === 403 ? "Đơn này không phải của bạn" : "Không mở được ngăn");
+    toast(err.status === 423 ? "Ngăn đang bị khóa 15 phút vì nhập sai nhiều lần" : d.error === "WRONG_OTP" ? `Sai mã OTP, còn ${d.left} lần thử` : d.error === "EXPIRED" ? "Mã OTP đã hết hạn" : d.error === "FACE_REQUIRED" ? "Đơn này cần xác minh khuôn mặt: bật camera và bấm Xác minh tôi trước, rồi nhập OTP" : err.status === 403 ? "Đơn này không phải của bạn" : "Không mở được ngăn");
   }
 });
 

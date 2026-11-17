@@ -13,6 +13,9 @@ enum EventType {
   HEARTBEAT   = 6;
   // Mở rộng so với đề: ghi nhận khóa ngăn do nhập sai OTP (Câu 2C.2 "Chống lạm dụng")
   OTP_LOCKOUT = 7;
+  // Mở rộng (docs/EXTENSIONS.md): nhân viên mở ngăn bảo trì bằng vân tay; vân tay sai quá số lần cho phép
+  MAINT_OPEN  = 8;   // compartment = ngăn đã mở, parcel_id = "FP<slot>" (vân tay nào)
+  FP_LOCKOUT  = 9;
 }
 
 message LockerEvent {

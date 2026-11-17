@@ -24,15 +24,15 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0clocker.proto\x12\x06locker\"\xbc\x01\n\x0bLockerEvent\x12\x0b\n\x03seq\x18\x01 \x01(\r\x12\n\n\x02ts\x18\x02 \x01(\x07\x12\x1f\n\x04type\x18\x03 \x01(\x0e\x32\x11.locker.EventType\x12\x13\n\x0b\x63ompartment\x18\x04 \x01(\r\x12\x11\n\tparcel_id\x18\x05 \x01(\t\x12\x13\n\x0b\x64oor_closed\x18\x06 \x01(\x08\x12\x10\n\x08temp_c10\x18\x07 \x01(\x11\x12\x12\n\nbattery_mv\x18\x08 \x01(\r\x12\x10\n\x08rssi_dbm\x18\t \x01(\x11\"?\n\x05\x42\x61tch\x12\x11\n\tdevice_id\x18\x01 \x01(\t\x12#\n\x06\x65vents\x18\x02 \x03(\x0b\x32\x13.locker.LockerEvent*\x7f\n\tEventType\x12\x0e\n\nEV_UNKNOWN\x10\x00\x12\x0b\n\x07\x44\x45POSIT\x10\x01\x12\n\n\x06PICKUP\x10\x02\x12\r\n\tDOOR_OPEN\x10\x03\x12\x0e\n\nDOOR_CLOSE\x10\x04\x12\n\n\x06TAMPER\x10\x05\x12\r\n\tHEARTBEAT\x10\x06\x12\x0f\n\x0bOTP_LOCKOUT\x10\x07\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0clocker.proto\x12\x06locker\"\xbc\x01\n\x0bLockerEvent\x12\x0b\n\x03seq\x18\x01 \x01(\r\x12\n\n\x02ts\x18\x02 \x01(\x07\x12\x1f\n\x04type\x18\x03 \x01(\x0e\x32\x11.locker.EventType\x12\x13\n\x0b\x63ompartment\x18\x04 \x01(\r\x12\x11\n\tparcel_id\x18\x05 \x01(\t\x12\x13\n\x0b\x64oor_closed\x18\x06 \x01(\x08\x12\x10\n\x08temp_c10\x18\x07 \x01(\x11\x12\x12\n\nbattery_mv\x18\x08 \x01(\r\x12\x10\n\x08rssi_dbm\x18\t \x01(\x11\"?\n\x05\x42\x61tch\x12\x11\n\tdevice_id\x18\x01 \x01(\t\x12#\n\x06\x65vents\x18\x02 \x03(\x0b\x32\x13.locker.LockerEvent*\x9f\x01\n\tEventType\x12\x0e\n\nEV_UNKNOWN\x10\x00\x12\x0b\n\x07\x44\x45POSIT\x10\x01\x12\n\n\x06PICKUP\x10\x02\x12\r\n\tDOOR_OPEN\x10\x03\x12\x0e\n\nDOOR_CLOSE\x10\x04\x12\n\n\x06TAMPER\x10\x05\x12\r\n\tHEARTBEAT\x10\x06\x12\x0f\n\x0bOTP_LOCKOUT\x10\x07\x12\x0e\n\nMAINT_OPEN\x10\x08\x12\x0e\n\nFP_LOCKOUT\x10\tb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'locker_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_EVENTTYPE']._serialized_start=280
-  _globals['_EVENTTYPE']._serialized_end=407
+  _globals['_EVENTTYPE']._serialized_start=281
+  _globals['_EVENTTYPE']._serialized_end=440
   _globals['_LOCKEREVENT']._serialized_start=25
   _globals['_LOCKEREVENT']._serialized_end=213
   _globals['_BATCH']._serialized_start=215
