@@ -37,18 +37,18 @@ dốc đột ngột, nên dự báo này chỉ đáng tin khi pin đang xả đ�
 Lớp xác thực thứ hai cho thao tác nhạy cảm, **không thay OTP của người nhận**. OpenCV Zoo YuNet (phát hiện) + SFace (nhận dạng),
 mô hình đặt ở `backend/models/face/` (không commit). Luồng:
 
-- `POST /biometric/face/enroll` (ADMIN, `biometric:manage`): đăng ký cho một ADMIN/OPERATOR, **bắt buộc `consent: true`**.
+- `POST /biometric/face/enroll` (ADMIN, `biometric:manage`): ADMIN đăng ký trực tiếp cho một ADMIN/OPERATOR **đang ngồi trước camera**, **bắt buộc `consent: true` và ADMIN nhập lại mật khẩu của mình** (mục 3c).
 - `POST /biometric/face/verify`: người dùng tự xác minh; đúng thì mở "cửa sổ" 2 phút; sai 5 lần khóa 15 phút; sai thì có cảnh báo `FACE_MISMATCH`.
 - `FACE_REQUIRED_FOR_REMOTE_OPEN=true`: mở khẩn cấp từ xa chỉ được khi vừa xác minh khuôn mặt.
 - `DELETE /biometric/face/{phone}`: xóa dữ liệu sinh trắc của người đó.
 
 **Demo không cần phần cứng thêm (dùng webcam laptop):** (1) trong `backend/.env` đặt `FACE_ENABLED=true`, chạy lại backend (mô hình đã có ở `backend/models/face/`);
 (2) đăng nhập ADMIN, kéo xuống thẻ "Xác minh khuôn mặt", bấm "Bật camera" (cho phép quyền camera, chỉ chạy được trên `localhost`/HTTPS), nhập SĐT của một tài khoản
-OPERATOR, tick "đã đồng ý", bấm "Đăng ký khuôn mặt từ camera"; (3) đăng xuất, đăng nhập OPERATOR đó, bật camera, bấm "Xác minh tôi": khớp hiện độ giống;
+OPERATOR, nhập lại mật khẩu của bạn, tick "đã đồng ý", bấm "Đăng ký khuôn mặt từ camera"; (3) đăng xuất, đăng nhập OPERATOR đó, bật camera, bấm "Xác minh tôi": khớp hiện độ giống;
 đưa người khác hoặc che camera thì báo không khớp/không thấy mặt (và có cảnh báo `FACE_MISMATCH`). Muốn thấy lớp thứ hai thật sự có tác dụng: đặt thêm
 `FACE_REQUIRED_FOR_REMOTE_OPEN=true`, rồi bấm "Mở khẩn cấp" trước khi xác minh sẽ bị từ chối và dashboard nhắc xác minh.
 
-Dữ liệu sinh trắc là dữ liệu nhạy cảm: **chỉ lưu vector 128 số, không lưu ảnh**, ghi thời điểm đồng ý, mọi thao tác vào `audit_log`, danh sách
+Dữ liệu sinh trắc là dữ liệu nhạy cảm: **chỉ lưu vector 128 số, không lưu ảnh, và vector được mã hóa trước khi lưu (mục 7)**, ghi thời điểm đồng ý, mọi thao tác vào `audit_log`, danh sách
 đăng ký không bao giờ trả vector. Cần tuân thủ quy định bảo vệ dữ liệu cá nhân của nơi triển khai.
 
 **Giới hạn:** SFace không có kiểm tra người thật (liveness): ảnh in hoặc ảnh trên màn hình có thể đánh lừa. Vì vậy đây là lớp phụ cộng thêm.
@@ -65,7 +65,7 @@ Test dùng ảnh mẫu của scikit-image để chứng minh mô hình thật ch
   hướng** và đủ lớn (mặc định 0,20, chỉnh bằng `FACE_LIVENESS_MIN_DELTA`), (3) ảnh quay mặt vẫn là cùng một người (`FACE_TURN_THRESHOLD`).
   Ảnh tĩnh (cùng một ảnh hai lần) cho độ lệch 0 nên không qua; phát lại ảnh cũ vô dụng vì nonce đã dùng; sai nonce là mất thử thách; thử thách hỏng vẫn
   tính vào giới hạn 5 lần sai.
-- Xem trước dạng gương khi bật thử thách, nên "bên phải của bạn" đúng với bên phải trên màn hình.
+- Khung xem trước luôn lật như gương (chỉ khung xem, ảnh gửi đi vẫn là ảnh gốc), nên "bên phải của bạn" đúng với bên phải trên màn hình.
 
 **Giới hạn trung thực của kiểm tra người thật:**
 1. **Ngưỡng chưa hiệu chỉnh trên webcam thật.** Tôi không có ảnh người quay mặt để đo. Phép đo thật trên ảnh mẫu cho nhiễu yaw cỡ 0,05 đến 0,1, nên ngưỡng 0,20
@@ -88,6 +88,43 @@ không phải tìm trong cả danh sách).
 - Tắt tính năng sau khi hàng đã vào tủ thì đơn vẫn **không** tự hạ về chỉ-OTP (đóng an toàn).
 - Hệ quả cố ý: người nhận hộ (nhận OTP rồi nhờ người khác lấy) không lấy được hàng loại này; nên báo trước cho khách.
 - Chưa làm: xác minh ngay tại tủ bằng camera (cần phần cứng; hiện chỉ làm qua web).
+
+### 3c. Gắn khuôn mặt vào tài khoản: mã cấp phép và nhập lại mật khẩu
+
+Điều quyết định độ tin cậy của xác thực khuôn mặt là **lúc đăng ký có chắc đúng người không**. Hệ thống không thể tự biết khuôn mặt trước camera
+có phải của nhân viên đó, nên việc xác nhận danh tính được làm **ngoài hệ thống bởi ADMIN**, rồi ADMIN cấp một mã cho đúng tài khoản đó:
+
+| Ai | Cách đăng ký khuôn mặt |
+|---|---|
+| OPERATOR | Cần **mã cấp phép** do ADMIN cấp + nhập lại mật khẩu + tick đồng ý. Đăng ký lại hoặc thay thế cũng cần mã mới |
+| ADMIN (cho chính mình) | Lần đầu: chỉ cần nhập lại mật khẩu (gốc tin cậy). Đăng ký lại/thay thế: cần mã (ADMIN tự cấp được) |
+| ADMIN (cho nhân viên đang có mặt) | `POST /biometric/face/enroll`: ADMIN nhập lại mật khẩu của mình |
+| CUSTOMER (người nhận) | Tự đăng ký, nhập lại mật khẩu (khuôn mặt chỉ bảo vệ đơn của chính họ). **Thay khuôn mặt đã có thì phải xác minh khuôn mặt hiện tại trước** |
+| SHIPPER, vai trò khác | Không có xác minh khuôn mặt |
+
+- `POST /biometric/face/codes` `{phone}` (ADMIN): cấp mã 8 chữ số cho một tài khoản ADMIN/OPERATOR **sau khi đã xác nhận đúng người ngoài hệ thống**
+  (gặp mặt, gọi điện). Mã **dùng một lần, hết hạn sau 15 phút, chỉ dùng được bởi đúng tài khoản đó**, chỉ lưu dạng băm (SHA-256) trong kho khóa – giá trị,
+  mã mới thay mã cũ, **sai 5 lần thì mã bị hủy**. Mã chỉ bị hủy khi đăng ký thành công, nên ảnh hỏng không làm mất mã.
+- `POST /biometric/face/me` `{image_b64, consent, password, code?}`: tự đăng ký; luôn kiểm tra mật khẩu (sai 5 lần thì khóa tạm 15 phút) và quy tắc mã ở bảng trên.
+- `DELETE /biometric/face/me` `{password}`: xóa khuôn mặt của chính mình, cũng cần nhập lại mật khẩu.
+- Nhập lại mật khẩu chặn trường hợp **phiên đăng nhập bị chiếm** (có token nhưng không biết mật khẩu); mã cấp phép chặn trường hợp **mật khẩu bị lộ**
+  (không có mã thì không gắn được khuôn mặt lạ vào tài khoản nhân viên). Kẻ xấu cần cả hai.
+- **Ghi đè bị chặn:** người nhận đã có khuôn mặt muốn thay phải vừa xác minh đúng khuôn mặt hiện tại (lần xác minh đó chỉ đủ cho một lần thay), nên kẻ chỉ biết
+  mật khẩu không ghi đè được (`OLD_FACE_REQUIRED`). Người nhận mất khả năng xác minh khuôn mặt cũ thì nhờ ADMIN xóa (`DELETE /biometric/face/{phone}`) rồi đăng ký lại.
+- **Không trùng khuôn mặt giữa các tài khoản:** lúc đăng ký, vector mới được so với mọi vector đã lưu. Nhân viên với nhân viên, hoặc người nhận với người nhận mà khớp
+  (cosine ≥ ngưỡng): **từ chối** (`409 FACE_DUPLICATE`, không tiết lộ tài khoản kia) và tạo cảnh báo `FACE_DUPLICATE` kèm hai số điện thoại cho ADMIN. Nhân viên với
+  người nhận (một người có hai tài khoản) cho phép nhưng ghi `face_duplicate_allowed`. Đăng ký lại khuôn mặt của chính mình không bị coi là trùng.
+- **Thử thách quay mặt cũng áp dụng lúc đăng ký** (`POST /biometric/face/me` kèm `nonce` và `turn_b64`) khi bật `FACE_LIVENESS`: ảnh tĩnh hoặc ảnh có sẵn không đăng ký
+  được (`LIVENESS_REQUIRED`/`LIVENESS_FAILED`); ảnh quay sai hướng hoặc đổi người giữa chừng bị từ chối. Thử thách hỏng không làm mất mã cấp phép.
+  (ADMIN đăng ký hộ nhân viên đang ngồi trước camera thì chính ADMIN là người giám sát nên không bắt thử thách.)
+- Cấp mã cũng phải nhập lại mật khẩu của ADMIN.
+- Mọi thao tác ghi `audit_log`: `face_code_issued` (không ghi mã), `face_enroll` (ADMIN đăng ký hộ), `face_enroll_self`, `face_remove_self`, `face_remove`.
+- Dashboard: thẻ khuôn mặt của ADMIN có **Tạo mã đăng ký** và đăng ký trực tiếp; mọi nhân viên có ô **Đăng ký khuôn mặt của tôi** (ô mã chỉ hiện khi cần).
+- Test: `backend/tests/test_face_enroll_codes.py` (17 test) và phần khuôn mặt của `test_account_security.py` (8 test: ghi đè, trùng, quay mặt lúc đăng ký); đã phá thử
+  nhiều lỗi cố ý như bỏ kiểm tra mật khẩu, bỏ kiểm tra mã, mã dùng chung cho mọi tài khoản, mã dùng lại được, bỏ kiểm tra trùng, cho ghi đè không cần xác minh cũ.
+
+**Giới hạn:** nếu ADMIN **xác nhận nhầm người** rồi cấp mã thì hệ thống không có cách nào biết (giới hạn của mọi quy trình cấp danh tính, giảm bằng quy trình
+con người). Người nhận (CUSTOMER) không cần mã nên kẻ biết mật khẩu của họ vẫn gắn được khuôn mặt vào đơn của họ; để lấy hàng vẫn cần OTP gửi tới điện thoại của chủ.
 
 ## 4. Mở bảo trì bằng vân tay
 
@@ -126,3 +163,46 @@ Ngoài đề (đề chỉ nêu bốn vai trò). Trước đây tài khoản ch�
 - Test: `backend/tests/test_registration.py` (18 test, đã phá thử 9 lỗi cố ý như cho chọn vai trò ADMIN, bỏ kiểm tra SĐT, shipper có quyền ngay, không giới hạn số lần đoán mã).
 
 **Giới hạn:** xác thực số điện thoại hiện chỉ có ý nghĩa khi có nhà cung cấp SMS thật; ở chế độ thử, ai cũng đăng ký được bằng số bất kỳ. Phản hồi 409 "đã đăng ký" cho biết một số đã có tài khoản (có thể dò số). Chưa có quên mật khẩu, đổi mật khẩu hay đăng xuất phía server.
+
+## 6. An toàn tài khoản khi mật khẩu bị lộ
+
+Kẻ biết số điện thoại và mật khẩu đăng nhập được như chủ tài khoản. Các lớp dưới đây nhằm phát hiện, hạn chế và xử lý tình huống đó (lớp xác thực thứ hai lúc đăng nhập
+cần SMS thật nên là hướng phát triển):
+
+| Biện pháp | Chi tiết |
+|---|---|
+| **Nhật ký đăng nhập** | Mỗi lần đăng nhập đúng và sai ghi vào `audit_log` (`login_ok`, `login_fail`, kèm địa chỉ IP; số lạ chỉ ghi 3 số đầu). `GET /auth/recent-logins` trả 10 sự kiện gần nhất của chính mình; dashboard hiện trong hộp thoại **Tài khoản** để chủ tài khoản thấy đăng nhập lạ |
+| **Đổi mật khẩu** | `POST /auth/change-password` `{old_password, new_password}`: phải đúng mật khẩu cũ (sai 5 lần khóa tạm 15 phút). Thành công thì **mọi token cấp trước đó bị thu hồi ngay** (kể cả của kẻ đang giữ phiên); thiết bị này nhận token mới |
+| **Thu hồi phiên** | Mỗi tài khoản có `token_epoch` (migration 007). Token truy cập mang `ep`, refresh token lưu epoch lúc cấp; đổi hoặc đặt lại mật khẩu, "đăng xuất mọi thiết bị" (`POST /auth/logout-all`) tăng epoch nên token cũ bị từ chối ở mọi API và khi nối WebSocket. Tài khoản bị khóa/từ chối cũng mất token ngay, không phải đợi 15 phút |
+| **Đăng xuất phía máy chủ** | `POST /auth/logout` hủy refresh token của thiết bị này |
+| **ADMIN đặt lại mật khẩu** | `POST /users/reset-password` `{phone, new_password, confirm_password}`: thu hồi mọi phiên của người đó; không dùng cho chính mình (dùng đổi mật khẩu) |
+| **ADMIN nhập lại mật khẩu cho thao tác nguy hiểm** | Tạo tài khoản, duyệt/từ chối shipper, đặt lại mật khẩu, cập nhật firmware OTA, thu hồi tủ (trường `confirm_password`), cấp mã khuôn mặt và đăng ký khuôn mặt hộ (trường `password`). Phiên bị chiếm không đủ để làm; sai 5 lần khóa tạm 15 phút. Mở khẩn cấp từ xa không bắt nhập lại (thao tác vận hành, đã có lớp khuôn mặt tùy chọn) |
+| **Chính sách mật khẩu** | Từ 8 ký tự, khác số điện thoại, không thuộc danh sách mật khẩu phổ biến, không chỉ lặp một hai ký tự. Áp dụng khi tự đăng ký, ADMIN tạo, đổi, đặt lại |
+
+Test: `backend/tests/test_account_security.py` (21 test, đã phá thử 26 lỗi cố ý: bỏ kiểm tra thu hồi, bỏ so epoch, đổi mật khẩu không thu hồi phiên, refresh không kiểm epoch,
+bỏ từng bước nhập lại mật khẩu, WebSocket không kiểm thu hồi, recent-logins lộ của người khác...).
+
+**Giới hạn còn lại:**
+- Chưa có xác thực hai lớp lúc đăng nhập (cần nhà cung cấp SMS thật hoặc ứng dụng xác thực): kẻ biết mật khẩu vẫn đăng nhập được, chỉ bị hạn chế ở thao tác nguy hiểm.
+- Chưa có "quên mật khẩu" tự phục vụ: người dùng phải nhờ ADMIN đặt lại (cần xác minh danh tính ngoài hệ thống, như với mã khuôn mặt).
+- Kết nối WebSocket **đang mở** nay bị đóng ngay (mã 4401) khi tài khoản đổi mật khẩu, đăng xuất mọi thiết bị hoặc bị đặt lại mật khẩu; máy khách nối lại bằng token mới (mục 7).
+- Khóa đăng nhập nay tính theo (số điện thoại, địa chỉ IP) nên kẻ ở nơi khác không khóa được chủ tài khoản bằng cách nhập sai (mục 7). Sau reverse proxy cần chạy uvicorn với `--proxy-headers` để thấy IP thật.
+- Chính sách mật khẩu chặn danh sách mật khẩu phổ biến (khoảng 80 mục), chuỗi tăng/giảm dần, hàng phím liền nhau, khối lặp và mật khẩu chứa số điện thoại; chưa tra cứu các mật khẩu đã bị lộ trên mạng (cần dịch vụ ngoài).
+
+## 7. Củng cố (đợt sau cùng)
+
+| Vấn đề | Cách xử lý |
+|---|---|
+| Vector khuôn mặt nằm nguyên trong database | **Mã hóa trước khi lưu** (Fernet: AES-128-CBC + HMAC-SHA256), cột `embedding_enc BYTEA`; cột `embedding` cũ chỉ để đọc dữ liệu cũ. Khóa lấy từ biến môi trường `FACE_ENCRYPTION_KEY` (hợp với Vault/secret của container), nếu không thì từ tệp `backend/keys/face_vector.key` (tự tạo lần đầu, nằm trong `.gitignore`). **Sao lưu khóa:** mất khóa thì vector không đọc lại được và người dùng phải đăng ký lại. Chuyển dữ liệu cũ: `python -m app.cli encrypt-face-vectors` |
+| Mở khẩn cấp chỉ bắt khuôn mặt khi bật cờ (mặc định tắt) | **Tự động bắt** với nhân viên **đã đăng ký** khuôn mặt (`FACE_AUTO_REQUIRE`, mặc định bật): mỗi lần mở khẩn cấp phải vừa xác minh. Người chưa đăng ký thì không bị chặn (khỏi mất quyền); `FACE_REQUIRED_FOR_REMOTE_OPEN=true` bắt cả người chưa đăng ký. Lần xác minh **chỉ dùng được một lần**, không mở nhiều ngăn liên tiếp trong cùng cửa sổ 2 phút |
+| WebSocket đang mở sống sau khi thu hồi phiên | Đổi mật khẩu, đăng xuất mọi thiết bị, đặt lại mật khẩu đóng mọi WebSocket của tài khoản đó (mã 4401) |
+| Khóa đăng nhập theo số bị lợi dụng để khóa chủ tài khoản | Đếm theo **(số điện thoại, IP)**: 5 lần sai từ một IP chỉ khóa IP đó. Vẫn chặn dò mật khẩu phân tán bằng ngưỡng chung theo số (25 lần sai từ mọi IP). Đặt lại mật khẩu bằng ADMIN xóa mọi khóa |
+| Dò mã đơn ở keypad của tủ | Cloud đếm mã đơn sai theo từng tủ (`UNKNOWN_PARCEL`, `WRONG_LOCKER`): **10 lần trong 15 phút thì khóa gửi hàng ở tủ đó** (trả `LOCKED`, kể cả mã đúng), tạo cảnh báo `DEPOSIT_LOCKOUT`; mã đúng xóa bộ đếm. Firmware cũng tự đếm khi gửi hàng **offline** (`maxWrongParcel` = 10, khóa `lockMinutes` = 15) và hiện "Gui hang bi khoa". Bộ đếm ở tủ không lưu bền: rút điện cần người đứng tại tủ |
+| Mật khẩu yếu còn lọt | Danh sách phổ biến mở rộng, chặn chuỗi tăng/giảm dần (`12345678`, `abcdefgh`), hàng phím (`qwertyuiop`), khối lặp (`abcabcabc`) và mật khẩu chứa số điện thoại |
+
+Test: `backend/tests/test_hardening.py` (38 test) và 3 test C++ mới; đã phá thử nhiều lỗi cố ý (không mã hóa, bỏ qua bản mã hóa, không bắt khuôn mặt, xác minh dùng lại được,
+không đóng WebSocket, đóng WebSocket của mọi người, khóa chỉ theo số, không đếm mã đơn sai, không khóa dò mã...) và test đều bắt được.
+
+**Giới hạn còn lại:** khóa mã hóa nằm cùng máy với database nên chỉ chống được trường hợp lộ riêng database hay bản sao lưu (nên để khóa trong Vault/secret quản lý riêng); khuôn mặt vẫn phải
+giải mã trên máy chủ mỗi lần so khớp. Khóa gửi hàng ở một tủ có thể bị lợi dụng để chặn shipper hợp lệ 15 phút (đánh đổi để chặn dò mã; ADMIN thấy cảnh báo `DEPOSIT_LOCKOUT`).
+Xác thực hai lớp lúc đăng nhập và quên mật khẩu tự phục vụ vẫn cần SMS thật.

@@ -168,6 +168,7 @@ void Locker::handleConfirm() {
   uint32_t now = clock_.millis();
 
   if (ui_ == Ui::DepositParcel) {
+    if (depositBlocked()) { showMessage("Gui hang bi khoa", "Thu lai sau"); clearInput(); return; }
     if (!cloud_.online()) { depositOffline(buf_); clearInput(); return; }
     strncpy(pendingParcel_, buf_, PARCEL_MAX - 1);
     if (!cloud_.requestDeposit(buf_)) { showMessage("Loi mang", "Thu lai sau"); return; }
@@ -300,7 +301,10 @@ void Locker::onCloudDepositReply(bool ok, uint8_t comp, const char* error) {
     showMessage("Bo hang, dong cua", l2, 8000);
     return;
   }
-  if (strcmp(error, "UNKNOWN_PARCEL") == 0) showMessage("Ma don khong co", "Kiem tra lai");
+  if (strcmp(error, "LOCKED") == 0) {                       // cloud thấy dò mã đơn: khóa luôn ở tủ để khỏi hỏi cloud liên tục
+    depositLocked_ = true; depositLockUntilMs_ = clock_.millis() + uint32_t(cfg_.lockMinutes) * 60000u;
+    showMessage("Gui hang bi khoa", "Thu lai sau");
+  } else if (strcmp(error, "UNKNOWN_PARCEL") == 0) showMessage("Ma don khong co", "Kiem tra lai");
   else if (strcmp(error, "NO_FREE_COMPARTMENT") == 0) showMessage("Het ngan trong", "Thu tu khac");
   else if (strcmp(error, "ALREADY_DEPOSITED") == 0) showMessage("Don da duoc gui", "");
   else showMessage("Loi he thong", error);
@@ -310,12 +314,25 @@ void Locker::onCloudDepositReply(bool ok, uint8_t comp, const char* error) {
 // Cloud biết ngăn nào và mã đơn nào sau khi sự kiện DEPOSIT đồng bộ, rồi mới sinh OTP.
 void Locker::depositOffline(const char* code) {
   char size = 0;
-  if (!parcels_.find(code, clock_.epoch(), &size)) { showMessage("Mat mang", "Khong gui duoc hang"); return; }
+  if (!parcels_.find(code, clock_.epoch(), &size)) { noteWrongParcel(); showMessage("Mat mang", "Khong gui duoc hang"); return; }
   uint8_t comp = pickFreeComp(size);
   if (!comp) { showMessage("Het ngan trong", "Thu tu khac"); return; }
+  depositFails_ = 0;                                         // mã đúng: bắt đầu đếm lại
   openFor(comp, W_DEPOSIT, code);
   char l2[24]; snprintf(l2, sizeof(l2), "Ngan %u", comp);
   showMessage("Bo hang, dong cua", l2, 8000);
+}
+
+bool Locker::depositBlocked() {
+  if (!depositLocked_) return false;
+  if (int32_t(clock_.millis() - depositLockUntilMs_) >= 0) { depositLocked_ = false; depositFails_ = 0; return false; }
+  return true;
+}
+
+void Locker::noteWrongParcel() {
+  if (++depositFails_ >= cfg_.maxWrongParcel) {
+    depositLocked_ = true; depositLockUntilMs_ = clock_.millis() + uint32_t(cfg_.lockMinutes) * 60000u;
+  }
 }
 
 static uint8_t sizeRank(char c) { return c == 'S' ? 0 : c == 'M' ? 1 : 2; }

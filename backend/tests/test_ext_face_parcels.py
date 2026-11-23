@@ -8,7 +8,7 @@ from app.proto import locker_pb2 as pb
 from app.services import face
 from tests.fake_locker import FakeLocker
 from tests.test_ext_face import FakeEngine, b64, faces  # noqa: F401 (fixture)
-from tests.test_api import api, headers, keypair, make_user  # noqa: F401 (fixture)
+from tests.test_api import PASSWORD, api, headers, keypair, make_user  # noqa: F401 (fixture)
 from tests.test_flow import sms_code
 
 LOCKER = "LOCKER-HCM-001"
@@ -16,7 +16,7 @@ CUSTOMER, OTHER, SHIPPER = "0900000004", "0900000005", "0900000003"
 
 
 def enroll_me(api, h, image="carol-1", consent=True):
-    return api.post("/biometric/face/me", json={"image_b64": b64(image), "consent": consent}, headers=h)
+    return api.post("/biometric/face/me", json={"image_b64": b64(image), "consent": consent, "password": PASSWORD}, headers=h)
 
 
 def create(api, shipper, pid="111", phone=CUSTOMER, require_face=True):
@@ -47,9 +47,9 @@ def test_a_customer_enrolls_and_erases_their_own_face(faces):
     assert enroll_me(faces, customer).status_code == 201
     assert faces.get("/biometric/face/me", headers=customer).json()["enrolled"] is True
     assert {r["action"] for r in query("SELECT action FROM audit_log")} >= {"face_enroll_self"}
-    assert faces.delete("/biometric/face/me", headers=customer).status_code == 200
+    assert faces.request("DELETE", "/biometric/face/me", json={"password": PASSWORD}, headers=customer).status_code == 200
     assert faces.get("/biometric/face/me", headers=customer).json()["enrolled"] is False
-    assert faces.delete("/biometric/face/me", headers=customer).status_code == 404
+    assert faces.request("DELETE", "/biometric/face/me", json={"password": PASSWORD}, headers=customer).status_code == 404
     assert faces.get("/biometric/face/me").status_code == 401
 
 

@@ -877,6 +877,48 @@ void test_locker_deposits_offline_a_parcel_the_cloud_announced() {
   TEST_ASSERT_EQUAL(1, r.hal.pulses.size());                     // không mở thêm ngăn nào
 }
 
+void test_locker_guessing_parcel_codes_locks_deposits_for_a_while() {
+  Rig r; r.cloud.isOnline = false;
+  TEST_ASSERT_TRUE(r.lk.onRpcSyncParcel(parcelHash("261027").c_str(), SALT_P, 'M', 1790100000));
+  for (int i = 0; i < r.cfg.maxWrongParcel; ++i) { r.keys("A999#"); r.advance(3000); }
+  r.keys("A261027#");                                            // mã ĐÚNG cũng bị từ chối trong lúc khóa
+  TEST_ASSERT_EQUAL(0, r.hal.pulses.size());
+  TEST_ASSERT_EQUAL_STRING("Gui hang bi khoa", r.hal.l1.c_str());
+  r.advance(uint32_t(r.cfg.lockMinutes) * 60000u - 20000u, 1000);
+  r.keys("A261027#");
+  TEST_ASSERT_EQUAL_MESSAGE(0, r.hal.pulses.size(), "chưa hết thời gian khóa");
+  r.advance(30000, 1000);
+  r.keys("A261027#");
+  TEST_ASSERT_EQUAL_MESSAGE(1, r.hal.pulses.size(), "hết khóa: mã đúng gửi hàng được");
+}
+
+void test_locker_a_few_wrong_parcel_codes_do_not_lock_and_a_good_one_resets_the_count() {
+  Rig r; r.cloud.isOnline = false;
+  TEST_ASSERT_TRUE(r.lk.onRpcSyncParcel(parcelHash("261027").c_str(), SALT_P, 'M', 1790100000));
+  TEST_ASSERT_TRUE(r.lk.onRpcSyncParcel(parcelHash("261028").c_str(), SALT_P, 'M', 1790100000));
+  for (int i = 0; i < r.cfg.maxWrongParcel - 1; ++i) { r.keys("A999#"); r.advance(3000); }
+  r.keys("A261027#");                                            // lần thứ maxWrongParcel là mã đúng: không khóa
+  TEST_ASSERT_EQUAL(1, r.hal.pulses.size());
+  r.advance(3000);
+  for (int i = 0; i < r.cfg.maxWrongParcel - 1; ++i) { r.keys("A999#"); r.advance(3000); }
+  r.keys("A261028#");                                            // mã đúng đã xóa bộ đếm, nên vẫn chưa khóa
+  TEST_ASSERT_EQUAL(2, r.hal.pulses.size());
+}
+
+void test_locker_cloud_saying_locked_blocks_further_deposit_requests_locally() {
+  Rig r;
+  r.keys("A999#");
+  TEST_ASSERT_EQUAL(1, r.cloud.deposits.size());
+  r.lk.onCloudDepositReply(false, 0, "LOCKED");
+  TEST_ASSERT_EQUAL_STRING("Gui hang bi khoa", r.hal.l1.c_str());
+  r.advance(3000);
+  r.keys("A999#");
+  TEST_ASSERT_EQUAL_MESSAGE(1, r.cloud.deposits.size(), "đang khóa: không hỏi cloud thêm");
+  r.advance(uint32_t(r.cfg.lockMinutes) * 60000u + 1000u, 1000);
+  r.keys("A999#");
+  TEST_ASSERT_EQUAL_MESSAGE(2, r.cloud.deposits.size(), "hết khóa: hỏi cloud lại");
+}
+
 void test_locker_offline_deposit_rejects_unknown_codes_and_full_lockers() {
   Rig r; r.cloud.isOnline = false;
   r.keys("A999#");
@@ -1292,6 +1334,9 @@ int main() {
   RUN_TEST(test_parcel_table_matches_by_hash_and_holds_no_plaintext);
   RUN_TEST(test_parcel_table_revoke_and_oldest_is_dropped_when_full);
   RUN_TEST(test_locker_deposits_offline_a_parcel_the_cloud_announced);
+  RUN_TEST(test_locker_guessing_parcel_codes_locks_deposits_for_a_while);
+  RUN_TEST(test_locker_a_few_wrong_parcel_codes_do_not_lock_and_a_good_one_resets_the_count);
+  RUN_TEST(test_locker_cloud_saying_locked_blocks_further_deposit_requests_locally);
   RUN_TEST(test_locker_offline_deposit_rejects_unknown_codes_and_full_lockers);
   RUN_TEST(test_locker_offline_deposit_skips_compartments_holding_a_parcel);
   RUN_TEST(test_power_sleeps_only_when_idle_and_nothing_is_pending);

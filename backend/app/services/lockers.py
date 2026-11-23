@@ -10,12 +10,14 @@ DEFAULT_SIZES = "SSSMMMLL"  # 8 ngăn: 3 nhỏ, 3 vừa, 2 lớn (khớp HwConfi
 def register_locker(locker_id: str, name: str, sizes: str = DEFAULT_SIZES,
                     address: Optional[str] = None, lat: Optional[float] = None,
                     lon: Optional[float] = None) -> None:
-    """Thêm tủ và các ngăn của nó. Chạy lại không làm hỏng dữ liệu cũ."""
+    """Thêm tủ và các ngăn của nó. Chạy lại không làm hỏng dữ liệu cũ; nếu truyền địa chỉ hoặc tọa độ thì tủ đã có được cập nhật
+    (giá trị để trống giữ nguyên giá trị cũ), để gán tọa độ cho tủ đăng ký trước đó bằng `register-locker --lat --lon`."""
     with tx() as cur:
         cur.execute(
             "INSERT INTO lockers (locker_id, name, address, geo) VALUES (%s, %s, %s, "
             "CASE WHEN %s::float8 IS NULL OR %s::float8 IS NULL THEN NULL ELSE point(%s, %s) END) "
-            "ON CONFLICT (locker_id) DO NOTHING",
+            "ON CONFLICT (locker_id) DO UPDATE SET address = COALESCE(EXCLUDED.address, lockers.address), "
+            "geo = COALESCE(EXCLUDED.geo, lockers.geo)",
             (locker_id, name, address, lon, lat, lon, lat),
         )
         for i, size in enumerate(sizes, start=1):
@@ -24,6 +26,44 @@ def register_locker(locker_id: str, name: str, sizes: str = DEFAULT_SIZES,
                 "ON CONFLICT DO NOTHING",
                 (locker_id, i, size),
             )
+
+
+def create_locker(locker_id: str, name: str, sizes: str = DEFAULT_SIZES, address: Optional[str] = None,
+                  lat: Optional[float] = None, lon: Optional[float] = None) -> bool:
+    """Thêm tủ MỚI cùng các ngăn trong một giao dịch. Trả về False nếu mã tủ đã tồn tại (không ghi đè gì cả),
+    khác `register_locker` (dùng cho CLI, chạy lại được)."""
+    with tx() as cur:
+        cur.execute(
+            "INSERT INTO lockers (locker_id, name, address, geo) VALUES (%s, %s, %s, "
+            "CASE WHEN %s::float8 IS NULL OR %s::float8 IS NULL THEN NULL ELSE point(%s, %s) END) "
+            "ON CONFLICT (locker_id) DO NOTHING RETURNING locker_id",
+            (locker_id, name, address, lon, lat, lon, lat),
+        )
+        if cur.fetchone() is None:
+            return False
+        for i, size in enumerate(sizes, start=1):
+            cur.execute("INSERT INTO compartments (locker_id, comp_no, size_code) VALUES (%s, %s, %s)", (locker_id, i, size))
+    return True
+
+
+def update_locker(locker_id: str, changes: dict) -> bool:
+    """Sửa tên, địa chỉ, vị trí của tủ đã có. `changes` chỉ chứa khóa cần đổi: "name", "address" (None = xóa),
+    "location" ((lat, lon), hoặc None = xóa khỏi bản đồ). Trả về False nếu không có tủ."""
+    sets, params = [], []
+    if "name" in changes:
+        sets.append("name = %s"); params.append(changes["name"])
+    if "address" in changes:
+        sets.append("address = %s"); params.append(changes["address"])
+    if "location" in changes:
+        loc = changes["location"]
+        if loc is None:
+            sets.append("geo = NULL")
+        else:
+            sets.append("geo = point(%s, %s)"); params.extend([loc[1], loc[0]])      # point(lon, lat)
+    if not sets:
+        return bool(query("SELECT 1 FROM lockers WHERE locker_id = %s", (locker_id,)))
+    rows = query(f"UPDATE lockers SET {', '.join(sets)} WHERE locker_id = %s RETURNING locker_id", (*params, locker_id))
+    return bool(rows)
 
 
 def set_fingerprint(locker_id: str, fingerprint: str) -> None:

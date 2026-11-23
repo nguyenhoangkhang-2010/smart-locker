@@ -20,6 +20,7 @@ struct LockerConfig {            // firmware điền từ config.h; test dùng m
   uint16_t openWindowSec = 30;   // sau lệnh mở, cửa được phép mở trong khoảng này
   uint16_t inputTimeoutSec = 20;
   uint8_t  maxWrongOtp = 5;
+  uint8_t  maxWrongParcel = 10;  // nhập sai mã đơn quá số lần này (ở phím A) thì khóa gửi hàng lockMinutes: chống dò mã đơn
   uint16_t lockMinutes = 15;
   uint8_t  otpLength = 6;
   uint8_t  maxParcelDigits = 12;
@@ -115,6 +116,11 @@ class Locker {
   char pendingParcel_[PARCEL_MAX];
   uint32_t lastKeyMs_, waitSinceMs_, messageUntilMs_;
   uint32_t seq_, seqCeil_;
+  uint8_t depositFails_ = 0;           // số lần nhập sai mã đơn liên tiếp (không lưu bền: rút điện là có người ở tủ)
+  bool depositLocked_ = false;
+  uint32_t depositLockUntilMs_ = 0;
+  bool depositBlocked();
+  void noteWrongParcel();
 
   void showIdle();
   void showMessage(const char* l1, const char* l2, uint32_t ms = 2500);

@@ -106,7 +106,7 @@ Lệnh kiểm chứng: `pytest` (backend), `pio test -e native` (lõi firmware),
 | Bí mật từ biến môi trường / Vault | ✅/✖ | Env + `JWT_PRIVATE_KEY`/`JWT_PUBLIC_KEY` có test; **Vault ✖** |
 | `remote_open` có audit | ✅ | `test_api.py` |
 | Dashboard 4 vùng: KPI | ✅ | Đã xem trên trình duyệt |
-| Bản đồ + danh sách tủ, chấm màu online/offline/cảnh báo, bấm xem lưới ngăn | ✅/⚖ | Bản đồ chiếu phẳng từ `geo`, không cần Internet; mỗi trạng thái có biểu tượng + chữ (có thêm "ngủ"). **Không có nền OpenStreetMap** (kèm link mở OSM từng tủ) |
+| Bản đồ + danh sách tủ, chấm màu online/offline/cảnh báo, bấm xem lưới ngăn | ✅/⚖ | **Bản đồ nền thật** Leaflet + OpenStreetMap (miễn phí, không cần khóa API; thư viện đóng gói sẵn trong `app/static/vendor/leaflet`, test ghim mã băm), chấm theo trạng thái với biểu tượng + chữ (có thêm "ngủ"). Không có Internet thì tự lùi về bản đồ chiếu phẳng từ `geo`. ADMIN thêm tủ và sửa tên/địa chỉ/vị trí ngay trên dashboard (`POST /lockers`, `PATCH /lockers/{id}`, nhập lại mật khẩu, có audit_log); dòng lệnh `register-locker --lat --lon` vẫn dùng được |
 | Lưới ngăn: trạng thái, mã đơn, **thời gian đã nằm trong tủ**, nút mở khẩn cấp chỉ ADMIN/OPERATOR | ✅ | `dwell_seconds`: `test_compartment_grid_reports_dwell_time_and_hourly_has_rssi`; nút ẩn theo quyền |
 | Biểu đồ: đơn theo giờ, điện áp pin, **RSSI**, nhật ký sự kiện | ✅ | RSSI **bổ sung**; đã xem trên trình duyệt |
 | Cards, Entity Table, Time-series Line Chart, Alarm Table của ThingsBoard | ⚖ | Dựng lại bằng HTML/SVG; Alarm Table = danh sách cảnh báo có "Đã xem" |

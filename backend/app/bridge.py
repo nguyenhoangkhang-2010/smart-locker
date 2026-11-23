@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from google.protobuf.message import DecodeError
 
 from . import state
+from .config import settings
 from .proto import locker_pb2 as pb
 from .services import alerts, events, lockers, parcels
 from .services.effects import Command
@@ -155,7 +156,10 @@ class Bridge:
 
         try:
             if method == "deposit_request":
+                if int(self.kv.get(f"depfail:{device_id}") or 0) >= settings.deposit_max_wrong:
+                    raise parcels.DepositError("LOCKED")              # đang khóa vì nghi dò mã đơn: không tra cứu nữa
                 comp = parcels.request_deposit(device_id, str(params.get("parcel_id", "")))
+                self.kv.delete(f"depfail:{device_id}")
                 self._reply(device_id, rid, {"ok": True, "comp": comp})
                 self.send(Command(device_id, "open", {"comp": comp, "reason": "deposit"}))
             elif method == "pickup_request":
@@ -173,6 +177,12 @@ class Bridge:
             else:
                 self._reply(device_id, rid, {"ok": False, "error": "UNKNOWN_METHOD"})
         except parcels.DepositError as exc:
+            if method == "deposit_request" and exc.code in ("UNKNOWN_PARCEL", "WRONG_LOCKER"):     # mã không dùng được: đếm để chống dò
+                n = self.kv.incr(f"depfail:{device_id}", settings.deposit_lock_sec)
+                if n == settings.deposit_max_wrong:
+                    alerts.raise_alert(self.kv, device_id, None, "DEPOSIT_LOCKOUT", "high",
+                                       f"Tủ {device_id}: nhập sai mã đơn {n} lần liên tiếp, đã khóa gửi hàng {settings.deposit_lock_sec // 60} phút (nghi dò mã đơn).",
+                                       dedup=False)
             self._reply(device_id, rid, {"ok": False, "error": exc.code})
         except ValueError:
             self._reply(device_id, rid, {"ok": False, "error": "BAD_REQUEST"})

@@ -15,6 +15,7 @@ from app.services import sms
 from tests.test_api import PASSWORD, api, headers, keypair, login, make_user  # noqa: F401 (fixture)
 
 NEW_PW = "mat-khau-moi-123"
+CP = {"confirm_password": PASSWORD}                  # ADMIN nhập lại mật khẩu cho thao tác nhạy cảm
 
 
 @pytest.fixture(autouse=True)
@@ -66,7 +67,7 @@ def test_customer_registers_verifies_the_phone_and_can_log_in(api):
     done = verify(api, "0912345678", body["demo_code"])
     assert done.status_code == 201 and done.json() == {"role": "CUSTOMER", "pending_approval": False}
     assert perms_of(api, "0912345678") == ["parcel:pickup"]
-    assert [r["action"] for r in query("SELECT action FROM audit_log")] == ["self_register"]
+    assert [r["action"] for r in query("SELECT action FROM audit_log WHERE action = 'self_register'")] == ["self_register"]
     stored = query("SELECT pw_hash FROM users WHERE phone = '0912345678'")[0]["pw_hash"]
     assert stored.startswith("$argon2id$") and NEW_PW not in stored
 
@@ -160,7 +161,7 @@ def test_a_self_registered_shipper_has_no_permission_until_an_admin_approves(api
     admin = headers(api, "ADMIN", "0900000001")
     pending = api.get("/users/pending", headers=admin).json()
     assert [p["phone"] for p in pending] == ["0944444444"]
-    ok = api.post(f"/users/{pending[0]['user_id']}/approve", headers=admin)
+    ok = api.post(f"/users/{pending[0]['user_id']}/approve", json=CP, headers=admin)
     assert ok.status_code == 200 and ok.json() == {"approved": "0944444444"}
 
     assert perms_of(api, "0944444444") == ["parcel:deposit"]                      # đăng nhập lại là có quyền
@@ -175,10 +176,10 @@ def test_a_rejected_shipper_cannot_log_in(api):
     sign_up(api, "0944444444", "SHIPPER")
     admin = headers(api, "ADMIN", "0900000001")
     uid = api.get("/users/pending", headers=admin).json()[0]["user_id"]
-    assert api.post(f"/users/{uid}/reject", headers=admin).json() == {"rejected": "0944444444"}
+    assert api.post(f"/users/{uid}/reject", json=CP, headers=admin).json() == {"rejected": "0944444444"}
     assert login_as(api, "0944444444").status_code == 401
     assert api.get("/users/pending", headers=admin).json() == []
-    assert api.post(f"/users/{uid}/approve", headers=admin).status_code == 404    # đã xử lý thì không duyệt lại được
+    assert api.post(f"/users/{uid}/approve", json=CP, headers=admin).status_code == 404    # đã xử lý thì không duyệt lại được
     assert "reject_shipper" in [r["action"] for r in query("SELECT action FROM audit_log")]
 
 
@@ -188,8 +189,8 @@ def test_only_an_admin_can_see_or_decide_pending_accounts(api):
     for role in ("OPERATOR", "SHIPPER", "CUSTOMER"):
         h = headers(api, role, f"0955{role[:3].encode().hex()[:6]}".replace("a", "1").replace("b", "2")[:10])
         assert api.get("/users/pending", headers=h).status_code == 403, role
-        assert api.post(f"/users/{uid}/approve", headers=h).status_code == 403, role
-        assert api.post(f"/users/{uid}/reject", headers=h).status_code == 403, role
+        assert api.post(f"/users/{uid}/approve", json=CP, headers=h).status_code == 403, role
+        assert api.post(f"/users/{uid}/reject", json=CP, headers=h).status_code == 403, role
     assert api.get("/users/pending").status_code == 401
     assert query("SELECT role FROM users WHERE phone = '0944444444'")[0]["role"] == "PENDING_SHIPPER"
 
@@ -199,7 +200,7 @@ def test_approve_only_applies_to_a_pending_shipper(api):
     make_user("OPERATOR", "0900000002")
     operator_id = str(query("SELECT user_id FROM users WHERE phone = '0900000002'")[0]["user_id"])
     for target in (operator_id, str(uuid.uuid4()), "khong-phai-uuid"):
-        assert api.post(f"/users/{target}/approve", headers=admin).status_code == 404, target      # không thể thăng vai trò tùy ý
+        assert api.post(f"/users/{target}/approve", json=CP, headers=admin).status_code == 404, target      # không thể thăng vai trò tùy ý
     assert query("SELECT role FROM users WHERE phone = '0900000002'")[0]["role"] == "OPERATOR"
 
 
@@ -208,17 +209,17 @@ def test_approve_only_applies_to_a_pending_shipper(api):
 def test_admin_creates_any_role_directly_and_it_works_at_once(api):
     admin = headers(api, "ADMIN", "0900000001")
     for role, phone in (("OPERATOR", "0966666661"), ("SHIPPER", "0966666662"), ("ADMIN", "0966666663"), ("CUSTOMER", "0966666664")):
-        res = api.post("/users", headers=admin, json={"phone": phone, "password": NEW_PW, "role": role, "name": "Thu"})
+        res = api.post("/users", headers=admin, json={"phone": phone, "password": NEW_PW, "confirm_password": PASSWORD, "role": role, "name": "Thu"})
         assert res.status_code == 201, (role, res.text)
         assert login_as(api, phone).status_code == 200
     assert perms_of(api, "0966666662") == ["parcel:deposit"]
-    assert api.post("/users", headers=admin, json={"phone": "0966666662", "password": NEW_PW, "role": "SHIPPER"}).status_code == 409
+    assert api.post("/users", headers=admin, json={"phone": "0966666662", "password": NEW_PW, "confirm_password": PASSWORD, "role": "SHIPPER"}).status_code == 409
 
 
 def test_admin_cannot_create_a_pending_role_or_an_unknown_role(api):
     admin = headers(api, "ADMIN", "0900000001")
     for role in ("PENDING_SHIPPER", "SUPERUSER", ""):
-        res = api.post("/users", headers=admin, json={"phone": "0977777777", "password": NEW_PW, "role": role})
+        res = api.post("/users", headers=admin, json={"phone": "0977777777", "password": NEW_PW, "confirm_password": PASSWORD, "role": role})
         assert res.status_code == 422, role
     assert query("SELECT 1 FROM users WHERE phone = '0977777777'") == []
 
@@ -226,7 +227,7 @@ def test_admin_cannot_create_a_pending_role_or_an_unknown_role(api):
 def test_admin_created_accounts_need_a_valid_phone_too(api):
     admin = headers(api, "ADMIN", "0900000001")
     for phone in ("09000001012", "123", "abcdefghij", ""):
-        res = api.post("/users", headers=admin, json={"phone": phone, "password": NEW_PW, "role": "OPERATOR"})
+        res = api.post("/users", headers=admin, json={"phone": phone, "password": NEW_PW, "confirm_password": PASSWORD, "role": "OPERATOR"})
         assert res.status_code == 422, phone
     assert query("SELECT count(*) AS n FROM users")[0]["n"] == 1                   # chỉ còn ADMIN đã có
 
@@ -234,6 +235,6 @@ def test_admin_created_accounts_need_a_valid_phone_too(api):
 def test_only_an_admin_can_create_accounts(api):
     for role in ("OPERATOR", "SHIPPER", "CUSTOMER"):
         h = headers(api, role, "0988" + str(abs(hash(role)) % 10 ** 6).zfill(6))
-        res = api.post("/users", headers=h, json={"phone": "0977777777", "password": NEW_PW, "role": "ADMIN"})
+        res = api.post("/users", headers=h, json={"phone": "0977777777", "password": NEW_PW, "confirm_password": PASSWORD, "role": "ADMIN"})
         assert res.status_code == 403, role
     assert query("SELECT 1 FROM users WHERE phone = '0977777777'") == []

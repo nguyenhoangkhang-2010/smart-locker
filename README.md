@@ -51,6 +51,8 @@ copy .env.example .env                       # điền DB_PASSWORD
 .venv\Scripts\python.exe -m app.cli register-locker --id LOCKER-HCM-001 --name "Tu HCM 001"
 ```
 
+Thêm tủ sau này: đăng nhập ADMIN, bấm **+ Thêm tủ** trên dashboard (hoặc dùng `register-locker` ở trên). Sửa tên, địa chỉ, vị trí: chọn tủ → **Sửa tên, địa chỉ, vị trí**. Mỗi tủ là một bản build firmware cùng mã nguồn, khác `SECRET_DEVICE_ID`; mã này phải đã được đăng ký trước, nếu không backend bỏ qua mọi tin của tủ.
+
 Chạy thử không cần broker (lệnh xuống tủ không đi đâu), có dữ liệu mẫu:
 
 ```powershell
@@ -68,9 +70,9 @@ Hướng dẫn demo từng chức năng, từng bước: [docs/HUONG_DAN_DEMO.md
 
 ```powershell
 cd backend
-.venv\Scripts\python.exe -m pytest tests -q                 # 169 test: backend, RBAC, đầu cuối, chứng chỉ, power budget, phần mở rộng
+.venv\Scripts\python.exe -m pytest tests -q                 # 301 test: backend, RBAC, đầu cuối, chứng chỉ, power budget, phần mở rộng
 cd ..
-~\.platformio\penv\Scripts\pio.exe test -e native           # 77 test lõi firmware C++ ngay trên máy
+~\.platformio\penv\Scripts\pio.exe test -e native           # 80 test lõi firmware C++ ngay trên máy
 ~\.platformio\penv\Scripts\pio.exe run -e esp32dev          # biên dịch firmware ESP32
 ```
 
@@ -139,7 +141,7 @@ logic firmware thật qua broker giả.
 | `include/config.h` | mọi tham số firmware; `secrets.h`, `certs.h` (không commit) |
 | `lib/edge_core/` | logic tủ thuần C++ (Ring Buffer, sync, OTP, đơn offline, UI, cửa, ngủ sâu, OTA guard), **có test trên máy** |
 | `lib/edge_esp32/`, `src/main.cpp` | phần cứng ESP32: keypad, TFT, solenoid, MQTT, NVS, LittleFS, ngủ sâu, OTA |
-| `test/test_core/` | 77 test C++ (Unity); `tools/core_sim.cpp` chạy lõi như một chương trình dòng lệnh |
+| `test/test_core/` | 80 test C++ (Unity); `tools/core_sim.cpp` chạy lõi như một chương trình dòng lệnh |
 | `backend/` | API, cầu nối MQTT, luật, dashboard; `migrations/`, `tests/` |
 | `infra/` | docker-compose, cấu hình Mosquitto + ACL |
 | `tools/` | `power_budget.py`, `make_certs.py` (+ `--revoke`), `gen_test_vectors.py`, `core_sim.cpp`, `wokwi_*` |

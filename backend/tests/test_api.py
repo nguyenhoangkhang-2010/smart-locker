@@ -164,7 +164,7 @@ def test_remote_open_reaches_the_locker_and_leaves_an_audit_trail(api, bus):
     res = api.post("/lockers/LOCKER-HCM-001/compartments/3/open", headers=headers(api, "OPERATOR"))
     assert res.status_code == 200
     assert locker.opens == [{"comp": 3, "reason": "remote"}]
-    audit = query("SELECT action, locker_id, comp_no FROM audit_log")
+    audit = query("SELECT action, locker_id, comp_no FROM audit_log WHERE action <> 'login_ok'")
     assert audit == [{"action": "remote_open", "locker_id": "LOCKER-HCM-001", "comp_no": 3}]
     assert api.post("/lockers/LOCKER-HCM-001/compartments/99/open", headers=headers(api, "OPERATOR")).status_code == 404
 
@@ -201,7 +201,7 @@ def test_summary_and_alert_acknowledgement(api, bus):
 
 def test_create_user_rules(api):
     admin = headers(api, "ADMIN")
-    body = {"phone": "0944444444", "password": PASSWORD, "role": "SHIPPER"}
+    body = {"phone": "0944444444", "password": PASSWORD, "role": "SHIPPER", "confirm_password": PASSWORD}
     assert api.post("/users", headers=admin, json=body).status_code == 201
     assert api.post("/users", headers=admin, json=body).status_code == 409
     assert api.post("/users", headers=admin, json={**body, "phone": "0955555555", "password": "short"}).status_code == 422

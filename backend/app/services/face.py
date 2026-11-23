@@ -11,7 +11,11 @@ Giới hạn trung thực: SFace không có kiểm tra "người thật" (livene
 Vì vậy đây là lớp phụ cộng thêm, không phải yếu tố duy nhất.
 """
 import logging
+import os
+import struct
 from typing import Optional, Protocol
+
+import psycopg2
 
 from ..config import settings
 from ..db import query
@@ -103,10 +107,67 @@ def cosine(a: list[float], b: list[float]) -> float:
     return float(x @ y / (np.linalg.norm(x) * np.linalg.norm(y)))
 
 
+# ---- mã hóa vector khi lưu (Fernet: AES-128-CBC + HMAC-SHA256). Khóa mất thì vector không đọc lại được: người dùng đăng ký lại.
+_fernet_cache = None
+
+
+def reset_crypto() -> None:
+    global _fernet_cache
+    _fernet_cache = None
+
+
+def _fernet():
+    global _fernet_cache
+    if _fernet_cache is None:
+        from cryptography.fernet import Fernet
+
+        env_key = os.getenv("FACE_ENCRYPTION_KEY")
+        if env_key:
+            raw = env_key.strip().encode()
+        else:
+            path = settings.face_key_file
+            if path.exists():
+                raw = path.read_text().strip().encode()
+            else:
+                path.parent.mkdir(parents=True, exist_ok=True)
+                raw = Fernet.generate_key()
+                path.write_text(raw.decode())
+                try:
+                    os.chmod(path, 0o600)
+                except OSError:
+                    pass
+                log.warning("đã tạo khóa mã hóa vector khuôn mặt mới: %s (hãy sao lưu; mất khóa thì phải đăng ký lại khuôn mặt)", path)
+        _fernet_cache = Fernet(raw)
+    return _fernet_cache
+
+
+def seal(vector: list[float]) -> bytes:
+    return _fernet().encrypt(struct.pack(f"<{len(vector)}f", *vector))
+
+
+def unseal(blob) -> list[float]:
+    data = _fernet().decrypt(bytes(blob))
+    return list(struct.unpack(f"<{len(data) // 4}f", data))
+
+
+def vector_of(row) -> list[float]:
+    """Vector của một dòng face_templates: bản mã hóa nếu có, nếu không thì bản cũ chưa mã hóa."""
+    return unseal(row["embedding_enc"]) if row.get("embedding_enc") is not None else list(row["embedding"])
+
+
+def encrypt_legacy() -> int:
+    """Chuyển các vector cũ (REAL[], chưa mã hóa) sang dạng mã hóa; trả về số dòng đã chuyển."""
+    rows = query("SELECT user_id, embedding FROM face_templates WHERE embedding IS NOT NULL AND embedding_enc IS NULL")
+    for r in rows:
+        query("UPDATE face_templates SET embedding_enc = %s, embedding = NULL WHERE user_id = %s",
+              (psycopg2.Binary(seal(list(r["embedding"]))), r["user_id"]))
+    return len(rows)
+
+
 def enroll(user_id: str, embedding: list[float]) -> None:
-    query("INSERT INTO face_templates (user_id, embedding, consent_at) VALUES (%s, %s, now()) "
-          "ON CONFLICT (user_id) DO UPDATE SET embedding = EXCLUDED.embedding, consent_at = now(), created_at = now()",
-          (user_id, embedding))
+    query("INSERT INTO face_templates (user_id, embedding_enc, consent_at) VALUES (%s, %s, now()) "
+          "ON CONFLICT (user_id) DO UPDATE SET embedding_enc = EXCLUDED.embedding_enc, embedding = NULL, consent_at = now(), created_at = now()",
+          (user_id, psycopg2.Binary(seal(embedding))))
 
 
 def remove(user_id: str) -> bool:
@@ -114,8 +175,8 @@ def remove(user_id: str) -> bool:
 
 
 def score_for(user_id: str, embedding: list[float]) -> Optional[float]:
-    rows = query("SELECT embedding FROM face_templates WHERE user_id = %s", (user_id,))
-    return cosine(rows[0]["embedding"], embedding) if rows else None
+    rows = query("SELECT embedding, embedding_enc FROM face_templates WHERE user_id = %s", (user_id,))
+    return cosine(vector_of(rows[0]), embedding) if rows else None
 
 
 def is_match(score: float) -> bool:
@@ -167,3 +228,49 @@ def turn_delta(direction: str, yaw_neutral: float, yaw_turn: float) -> tuple[flo
 
 def ok_key(user_sub: str) -> str:
     return f"face_ok:{user_sub}"
+
+
+# ---- mã cấp phép đăng ký (nhân viên). ADMIN xác nhận danh tính người đó NGOÀI hệ thống (gặp mặt, gọi điện) rồi cấp mã.
+# Mã 8 chữ số, dùng một lần, hết hạn sau face_code_ttl, gắn với đúng một tài khoản, chỉ lưu dạng băm, sai quá số lần thì hủy.
+
+def code_key(user_id: str) -> str:
+    return f"facecode:{user_id}"
+
+
+def _code_hash(user_id: str, code: str) -> str:
+    import hashlib
+    return hashlib.sha256(f"{user_id}:{code}".encode()).hexdigest()
+
+
+def issue_code(kv, user_id: str) -> str:
+    """Cấp mã mới; mã cũ của cùng tài khoản (nếu còn) bị thay thế."""
+    import json
+    import secrets
+
+    code = f"{secrets.randbelow(10 ** 8):08d}"
+    kv.set(code_key(user_id), json.dumps({"hash": _code_hash(user_id, code), "tries": 0}), settings.face_code_ttl)
+    return code
+
+
+def check_code(kv, user_id: str, code: Optional[str]) -> str:
+    """Trả về "OK" | "NONE" (chưa cấp hoặc hết hạn) | "WRONG" | "LOCKED" (sai quá số lần: mã bị hủy). Không xóa mã khi đúng:
+    mã chỉ bị hủy khi đăng ký thành công (drop_code), để ảnh hỏng không làm mất mã."""
+    import hmac
+    import json
+
+    raw = kv.get(code_key(user_id))
+    if not raw:
+        return "NONE"
+    entry = json.loads(raw)
+    if code and hmac.compare_digest(entry["hash"], _code_hash(user_id, code.strip())):
+        return "OK"
+    entry["tries"] += 1
+    if entry["tries"] >= settings.face_code_tries:
+        kv.delete(code_key(user_id))
+        return "LOCKED"
+    kv.set(code_key(user_id), json.dumps(entry), max(int(kv.ttl(code_key(user_id)) or 1), 1))
+    return "WRONG"
+
+
+def drop_code(kv, user_id: str) -> None:
+    kv.delete(code_key(user_id))

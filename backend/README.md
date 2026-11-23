@@ -43,7 +43,7 @@ Tài liệu API tự sinh: <http://localhost:8000/docs>.
 
 ## Lệnh quản trị mới
 
-`python -m app.cli register-locker --id ... --name ... --lat 10.77 --lon 106.70 --fingerprint <sha256>`,
+`python -m app.cli register-locker --id ... --name ... --lat 10.77 --lon 106.70 --fingerprint <sha256>` (chạy lại trên tủ đã có thì cập nhật địa chỉ/tọa độ; ADMIN cũng làm được trên dashboard: nút **+ Thêm tủ** và **Sửa tên, địa chỉ, vị trí**, qua `POST /lockers` và `PATCH /lockers/{id}`),
 `python -m app.cli revoke-locker --id ...` (kèm `python ../tools/make_certs.py --revoke <id>` để broker từ chối ở tầng TLS).
 
 ## Test

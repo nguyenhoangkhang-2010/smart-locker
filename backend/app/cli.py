@@ -47,6 +47,7 @@ def main() -> None:
     user.add_argument("--phone", required=True)
     user.add_argument("--role", required=True, choices=["ADMIN", "OPERATOR", "SHIPPER", "CUSTOMER"])
     user.add_argument("--name")
+    sub.add_parser("encrypt-face-vectors")
     demo = sub.add_parser("seed-demo")
     demo.add_argument("--reset", action="store_true", help="xóa đơn/sự kiện/cảnh báo cũ trước khi tạo")
     locker = sub.add_parser("register-locker")
@@ -77,6 +78,10 @@ def main() -> None:
         query("INSERT INTO users (phone, name, pw_hash, role) VALUES (%s, %s, %s, %s)",
               (args.phone, args.name, security.hash_password(password), args.role))
         print(f"đã tạo {args.role} {args.phone}")
+    elif args.cmd == "encrypt-face-vectors":
+        from .services import face
+
+        print(f"đã mã hóa {face.encrypt_legacy()} vector khuôn mặt cũ")
     elif args.cmd == "seed-demo":
         import os
 

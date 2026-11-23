@@ -82,6 +82,19 @@ class Settings:
     forecast_flat_mv_per_hour = 0.5                        # dốc nhẹ hơn mức này coi là ổn định
     face_enabled = _bool("FACE_ENABLED", False)
     face_model_dir = _path("FACE_MODEL_DIR", "models/face")
+    # Mã cấp phép đăng ký khuôn mặt cho nhân viên: ADMIN xác nhận danh tính ngoài hệ thống rồi cấp mã (dùng một lần, gắn với một tài khoản)
+    face_code_ttl = 15 * 60
+    # Mở khẩn cấp: nhân viên ĐÃ đăng ký khuôn mặt thì mỗi lần mở phải vừa xác minh (dùng một lần). Chưa đăng ký thì không bị chặn (khỏi khóa mất quyền).
+    # FACE_REQUIRED_FOR_REMOTE_OPEN=true: bắt mọi người, kể cả chưa đăng ký. FACE_AUTO_REQUIRE=false: tắt hẳn chế độ tự động.
+    face_auto_require = _bool("FACE_AUTO_REQUIRE", True)
+    # Vector khuôn mặt được mã hóa trước khi lưu. Khóa lấy từ FACE_ENCRYPTION_KEY (hợp với Vault/secret của container) hoặc tệp này (tự tạo lần đầu).
+    face_key_file = _path("FACE_KEY_FILE", "keys/face_vector.key")
+    # Chống dò: nhập sai mã đơn ở một tủ quá số lần này trong deposit_lock_sec thì khóa gửi hàng ở tủ đó
+    deposit_max_wrong = 10
+    deposit_lock_sec = 15 * 60
+    # Khóa đăng nhập: 5 lần sai từ MỘT địa chỉ IP khóa cặp (số, IP); ngưỡng chung cho cả số cao hơn để chống dò phân tán
+    login_global_max_fails = 25
+    face_code_tries = 5
     face_threshold = float(os.getenv("FACE_THRESHOLD", "0.363"))   # ngưỡng cosine khuyến nghị của SFace
     face_required_for_remote_open = _bool("FACE_REQUIRED_FOR_REMOTE_OPEN", False)
     # Kiểm tra "người thật" bằng thử thách quay mặt (chống ảnh tĩnh). Tắt mặc định; chưa hiệu chỉnh ngưỡng trên webcam thật nên

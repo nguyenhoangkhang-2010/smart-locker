@@ -39,10 +39,19 @@ def database():
     db.reset_pool()
 
 
+@pytest.fixture(scope="session", autouse=True)
+def face_key_file(tmp_path_factory):
+    """Khóa mã hóa vector khuôn mặt của test nằm ở thư mục tạm, không đụng khóa thật trong backend/keys/."""
+    from app.services import face
+
+    settings.face_key_file = tmp_path_factory.mktemp("facekey") / "face_vector.key"
+    face.reset_crypto()
+
+
 @pytest.fixture(autouse=True)
 def default_flags(monkeypatch):
     """Test không phụ thuộc backend/.env của người chạy: các tính năng mở rộng luôn bắt đầu ở trạng thái tắt."""
-    for name in ("face_enabled", "face_required_for_remote_open", "anomaly_enabled"):
+    for name in ("face_enabled", "face_liveness", "face_required_for_remote_open", "anomaly_enabled"):
         monkeypatch.setattr(settings, name, False)
 
 

@@ -22,7 +22,7 @@ cd ..
 ~\.platformio\penv\Scripts\pio.exe run -e esp32dev
 ```
 
-Kết quả mong đợi: **169 passed**, **77 test C++ đạt**, build firmware `SUCCESS`. (Lệnh `pio test` cần g++; nếu thiếu thì cài MinGW/MSYS2.)
+Kết quả mong đợi: **301 passed**, **80 test C++ đạt**, build firmware `SUCCESS`. (Lệnh `pio test` cần g++; nếu thiếu thì cài MinGW/MSYS2.)
 
 Chạy riêng từng nhóm để vừa chạy vừa giải thích cho thầy (`-v` hiện tên từng test):
 
@@ -99,12 +99,35 @@ Không cần dòng lệnh để có tài khoản nữa:
 
 Người đăng ký **không chọn được vai trò** ngoài hai loại trên; OPERATOR và ADMIN chỉ do ADMIN tạo. Mọi thao tác duyệt và tự đăng ký được ghi vào `audit_log` (`self_register`, `approve_shipper`, `reject_shipper`, `create_user`).
 
+**ADMIN nhập lại mật khẩu cho thao tác nguy hiểm (mới):** khi tạo tài khoản, duyệt/từ chối shipper, đặt lại mật khẩu, OTA, thu hồi tủ, cấp mã khuôn mặt, dashboard hiện hộp
+**"Nhập mật khẩu của bạn để …"**. Nhập sai thì bị từ chối ("Mật khẩu không đúng"); nhập sai 5 lần bị khóa tạm 15 phút; bấm Hủy thì không làm gì.
+
 Muốn đăng ký khuôn mặt cho chính bạn (mục 2.6): nhờ ADMIN tạo (hoặc tự tạo bằng thẻ **Tạo tài khoản**) một tài khoản OPERATOR bằng SĐT của bạn, rồi nhập SĐT đó vào thẻ khuôn mặt.
+
+### 2.1c An toàn tài khoản khi mật khẩu bị lộ (mới)
+
+Bấm nút **Tài khoản** ở thanh đầu trang (ai cũng có):
+1. Thấy mục **Lần đăng nhập gần đây** (đăng nhập thành công, đăng nhập sai kèm địa chỉ IP). Đăng nhập sai vài lần từ một cửa sổ khác để thấy nó xuất hiện ở đây.
+2. **Đổi mật khẩu:** nhập mật khẩu hiện tại và mật khẩu mới. Mật khẩu yếu (`12345678`, `password`, trùng số điện thoại...) bị từ chối. Mở **một cửa sổ ẩn danh đăng nhập cùng tài khoản**, đổi mật khẩu ở
+   cửa sổ thường, rồi thử thao tác ở cửa sổ ẩn danh: phiên của nó **bị thu hồi ngay** (đây là điều chặn kẻ đang giữ phiên cũ).
+3. **Đăng xuất mọi thiết bị:** mọi cửa sổ đang đăng nhập đều mất phiên.
+4. ADMIN: thẻ **Tạo tài khoản** có thêm form **Đặt lại mật khẩu** cho người khác; phiên cũ của họ bị thu hồi.
+5. Nút **Đăng xuất** cũng hủy phiên phía máy chủ.
+
+### 2.1d Củng cố (đợt sau cùng)
+
+- **Mở khẩn cấp phải xác minh khuôn mặt (tự động):** nhân viên đã đăng ký khuôn mặt bấm **Mở khẩn cấp** mà chưa xác minh: bị từ chối ("Cần xác minh khuôn mặt trước"). Bấm **Xác minh tôi**
+  (đúng mặt) rồi mở ngay thì được; mở ngăn thứ hai ngay sau đó lại phải xác minh lần nữa (mỗi lần xác minh dùng một lần). Nhân viên chưa đăng ký khuôn mặt vẫn mở được.
+- **Khóa đăng nhập theo (số, IP):** nhập sai mật khẩu 5 lần từ máy này thì bị khóa 15 phút; một máy khác (IP khác) vẫn đăng nhập được bằng mật khẩu đúng.
+- **Đổi mật khẩu đóng WebSocket:** mở dashboard ở hai cửa sổ cùng tài khoản; đổi mật khẩu ở một cửa sổ thì cửa sổ kia mất kết nối trực tiếp và phải đăng nhập lại.
+- **Khóa dò mã đơn (Wokwi):** ở chế độ online, nhập sai mã đơn 10 lần ở keypad (`A`, mã không có, `#`): lần sau, kể cả mã đúng, tủ hiện **"Gui hang bi khoa"**; dashboard có cảnh báo
+  **Nhập sai mã đơn nhiều lần ở tủ**. Chờ 15 phút (hoặc xóa bộ đếm khi demo bằng cách khởi động lại backend với Redis trống) thì gửi hàng lại được. Chạy kiểm chứng nhanh bằng
+  `pytest tests/test_hardening.py -v` và `pio test -e native`.
 
 ### 2.2 Trung tâm vận hành (ADMIN)
 
 1. Bốn thẻ KPI: tủ online 1/2, lấp đầy ngăn, đơn chờ lấy, cảnh báo đang mở.
-2. Bản đồ + danh sách tủ: chấm đỏ là tủ có cảnh báo, chấm xám là offline. Bấm một tủ để xem **lưới 8 ngăn** (trạng thái, mã đơn, thời gian đã nằm).
+2. Bản đồ + danh sách tủ: **bản đồ nền thật OpenStreetMap** (cần Internet; không có mạng thì tự hiện bản đồ phẳng kèm ghi chú). Chấm đỏ là tủ có cảnh báo, xám là offline; bấm chấm hoặc bấm một tủ trong danh sách để xem **lưới 8 ngăn** (trạng thái, mã đơn, thời gian đã nằm). Tủ chưa có tọa độ chỉ hiện trong danh sách. Đăng nhập **ADMIN** để quản lý tủ ngay trên trang: nút **+ Thêm tủ** (mã tủ, tên, địa chỉ, vĩ độ/kinh độ, cỡ các ngăn, nhập lại mật khẩu) và, sau khi chọn một tủ, nút **Sửa tên, địa chỉ, vị trí** ở thẻ "Chi tiết tủ" (để trống vĩ độ/kinh độ thì gỡ tủ khỏi bản đồ). Vẫn dùng được dòng lệnh: `python -m app.cli register-locker --id <mã tủ> --name <tên> --address "..." --lat 10.7769 --lon 106.7009` (chạy lại trên tủ đã có thì cập nhật), hoặc SQL: `UPDATE lockers SET geo = point(106.7009, 10.7769) WHERE name = 'Tu HCM 001';` (kinh độ trước, vĩ độ sau). Bấm phải lên bản đồ openstreetmap.org để lấy tọa độ.
 3. Cảnh báo "Cửa bị mở trái phép" (mức Cao) có sẵn: bấm **Đã xem**.
 4. Biểu đồ: đơn gửi/lấy theo giờ, điện áp pin, RSSI. Nút **Xem bảng** hiện số liệu thô.
 5. **Nhật ký sự kiện mới nhất** ở cuối trang.
@@ -135,16 +158,26 @@ ADMIN → chọn `Tu HCM 001` → thẻ **Chi tiết tủ**:
 
 Mô hình đã nằm ở `backend\models\face\`, và `FACE_ENABLED=true` đã có trong `.env`.
 
-**Đăng ký (nhân viên):**
-1. ADMIN → kéo xuống thẻ **Xác minh khuôn mặt (mở rộng)** → **Bật camera** (cho phép quyền camera).
-2. Nhập SĐT `0900000002` (OPERATOR), tick *đã đồng ý*, bấm **Đăng ký khuôn mặt từ camera**. Hoặc chọn một ảnh có sẵn (đúng một khuôn mặt, nhìn thẳng). Ảnh chụp trước dùng được.
-3. DBeaver: `SELECT * FROM face_templates;` chỉ thấy vector 128 số và thời điểm đồng ý, **không có ảnh**.
+**Đăng ký, cách nhanh khi demo một mình (ADMIN đăng ký cho chính mình):**
+1. ADMIN → kéo xuống thẻ **Xác minh khuôn mặt (mở rộng)**. Thẻ chỉ có ba nút: **Bật camera**, **Xác minh tôi**, **Đăng ký khuôn mặt…**. Bấm **Đăng ký khuôn mặt…** để mở cửa sổ đăng ký (có các tab bên dưới).
+2. Trong cửa sổ đăng ký, tab **Của tôi**: bấm **Bật camera** trong cửa sổ (cho phép quyền camera, khung xem lật như gương), nhập **mật khẩu của bạn**, tick đồng ý, bấm **Đăng ký khuôn mặt của tôi**. Lần đầu của ADMIN **không cần mã**; đăng ký xong cửa sổ tự đóng.
+3. DBeaver: `SELECT user_id, length(embedding_enc) AS byte_ma_hoa, embedding IS NULL AS khong_con_ban_ro FROM face_templates;` ra một dòng: vector chỉ còn dạng **mã hóa** (hơn 500 byte), `embedding` đã NULL, và **không có ảnh**.
+4. Trong cùng thẻ bấm **Xác minh tôi** (xác minh chính tài khoản đang đăng nhập), không cần đăng xuất.
+
+**Đăng ký cho nhân viên (đúng quy trình), có hai cách:**
+- *Nhân viên đang có mặt:* ADMIN mở cửa sổ đăng ký, tab **Cho nhân viên đang có mặt**: nhập SĐT nhân viên (ví dụ `0900000002`), **mật khẩu của ADMIN**, tick đồng ý, nhân viên ngồi trước camera, bấm **Đăng ký khuôn mặt từ camera**.
+- *Nhân viên không có mặt:* ADMIN xác nhận đúng người (gặp mặt, gọi điện) rồi mở tab **Cấp mã cho nhân viên**: nhập SĐT, bấm **Tạo mã đăng ký** để được mã 8 số (dùng một lần, 15 phút). Nhân viên đăng nhập, bấm **Đăng ký khuôn mặt…**, bật camera, ở tab **Của tôi** nhập **mã + mật khẩu của mình**, tick đồng ý, bấm đăng ký. Thử thêm: nhập sai mã, dùng lại mã, để quá 15 phút (đều bị từ chối).
 
 **Xác minh:**
 1. Đăng xuất, đăng nhập OPERATOR → **Bật camera** → **Xác minh tôi**.
 2. Nếu bật `FACE_LIVENESS`: làm theo lời nhắc (nhìn thẳng, rồi quay mặt về bên TRÁI hoặc PHẢI của bạn). Kết quả hiện độ giống và độ lệch đo được.
 3. Thử các trường hợp sai: che camera (báo không thấy mặt), đưa người khác vào, cầm ảnh tĩnh trước camera (không qua bước quay mặt), quay sai hướng. Mỗi lần sai có cảnh báo `FACE_MISMATCH`; sai 5 lần thì khóa 15 phút.
 4. Nếu quay đúng mà vẫn báo "chưa đủ", giao diện in độ lệch đo được: hạ `FACE_LIVENESS_MIN_DELTA` (mặc định 0,20) rồi chạy lại backend. Đây chính là việc "đo ngưỡng trên người thật".
+
+**Chống ghi đè và trùng khuôn mặt (mới):**
+- *Người nhận thay khuôn mặt:* đăng nhập CUSTOMER đã đăng ký, bấm đăng ký lại ngay: bị từ chối ("hãy bấm Xác minh tôi trước"). Bấm **Xác minh tôi** (đúng mặt) rồi đăng ký lại thì được, và lần xác minh đó chỉ đủ một lần.
+- *Một khuôn mặt, hai tài khoản:* đăng ký cùng một khuôn mặt cho hai tài khoản nhân viên (hoặc hai tài khoản người nhận): bị từ chối ("đã được đăng ký cho một tài khoản khác") và ADMIN thấy cảnh báo **Khuôn mặt đăng ký trùng tài khoản khác**.
+- *Bật `FACE_LIVENESS`:* đăng ký cũng phải quay mặt theo lời nhắc; ô chọn ảnh có sẵn của người nhận bị ẩn.
 
 **Cổng hai lớp cho mở khẩn cấp:**
 ```powershell
@@ -154,7 +187,7 @@ OPERATOR bấm **Mở khẩn cấp** khi chưa xác minh: bị từ chối và d
 
 ### 2.7 Hàng giá trị cao (đúng người nhận)
 
-1. CUSTOMER `…04` đăng nhập → thẻ khuôn mặt của chính mình → tick đồng ý → **Đăng ký khuôn mặt của bạn** (camera hoặc ảnh có sẵn).
+1. CUSTOMER `…04` đăng nhập → thẻ khuôn mặt của chính mình → **Đăng ký khuôn mặt…** → trong cửa sổ: nhập lại mật khẩu, tick đồng ý, bật camera (hoặc chọn ảnh có sẵn khi chưa bật `FACE_LIVENESS`) → **Đăng ký khuôn mặt của tôi**.
 2. SHIPPER tạo đơn cho `0900000004`, tick **giá trị cao: người nhận phải xác minh khuôn mặt**. Nếu người nhận chưa đăng ký khuôn mặt, hệ thống **từ chối tạo đơn** (thử trước bước 1 để thấy thông báo).
 3. Khi đơn đã nằm trong tủ (Mức 3), CUSTOMER lấy hàng: phải **Xác minh tôi** trước (hiệu lực 120 giây, dùng một lần) rồi mới nhập OTP. Nhập OTP mà chưa xác minh: lỗi `FACE_REQUIRED`.
 
@@ -183,6 +216,8 @@ Remove-Item Env:MQTT_ENABLED -ErrorAction SilentlyContinue   # nếu phiên này
 ```
 
 Terminal khác, build firmware: `~\.platformio\penv\Scripts\pio.exe run -e esp32dev`. Mở thư mục `locker-smart` trong VS Code → `F1` → **Wokwi: Start Simulator**. Trên dashboard sẽ có thêm một tủ tên `LOCKER-DEMO-…`: chọn nó cho mọi bước dưới đây. Dữ liệu mẫu `LOCKER-HCM-001` **không** gắn với Wokwi.
+
+> **Wokwi chỉ chạy được một tủ.** Mỗi tủ là một bản build cùng mã nguồn nhưng khác `SECRET_DEVICE_ID`; một project Wokwi chỉ chạy một firmware, và ở chế độ demo backend chỉ nghe đúng một thiết bị (`MQTT_ONLY_DEVICE`). Nhiều tủ cùng lúc đã có ở dữ liệu mẫu và có test (`tests/test_locker_admin.py`, `test_e2e_*`). Tủ thêm trên dashboard muốn "sống" thì phải có firmware mang đúng mã tủ đó (tủ thật, hoặc một Wokwi thứ hai).
 
 Kiểm tra nhanh backend + broker trước khi mở Wokwi: `.venv\Scripts\python.exe ..\tools\wokwi_probe.py` (chạy lõi firmware thật thay cho board, tự dọn dữ liệu sau khi xong).
 

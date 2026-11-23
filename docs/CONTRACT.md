@@ -77,7 +77,7 @@ lần thức sau (phiên MQTT bền, QoS 1), tối đa một `heartbeatSec`.
 
 | `method` | `params` | Trả lời |
 |---|---|---|
-| `deposit_request` | `{"parcel_id":"261027012345"}` (chỉ chữ số, tối đa 12, vì nhập từ keypad) | `{"ok":true,"comp":5}` rồi cloud gửi RPC `open`; hoặc `{"ok":false,"error":"UNKNOWN_PARCEL\|NO_FREE_COMPARTMENT\|ALREADY_DEPOSITED\|WRONG_LOCKER"}` |
+| `deposit_request` | `{"parcel_id":"261027012345"}` (chỉ chữ số, tối đa 12, vì nhập từ keypad) | `{"ok":true,"comp":5}` rồi cloud gửi RPC `open`; hoặc `{"ok":false,"error":"UNKNOWN_PARCEL\|NO_FREE_COMPARTMENT\|ALREADY_DEPOSITED\|WRONG_LOCKER\|LOCKED"}` |
 | `pickup_request` | `{"comp":5,"otp":"123456"}` | `{"ok":true}` rồi cloud gửi RPC `open`; hoặc `{"ok":false,"error":"WRONG_OTP\|LOCKED\|EXPIRED\|EMPTY","left":3}` |
 
 OTP đi qua đường truyền đã mã hóa TLS; cloud chỉ lưu bản băm.
@@ -126,6 +126,9 @@ Nhập sai OTP `maxWrongOtp` = **5** lần ở cùng một ngăn → khóa ngăn
 sự kiện `OTP_LOCKOUT` và tạo cảnh báo. Khi online bộ đếm ở cloud (Redis, TTL); khi offline bộ đếm ở tủ
 (lưu NVS), đồng bộ lại qua sự kiện.
 
+Nhập sai **mã đơn** (phím `A`) quá `maxWrongParcel` = **10** lần: cloud khóa gửi hàng ở tủ đó `deposit_lock_sec` = **15** phút (trả `{"ok":false,"error":"LOCKED"}`,
+kể cả mã đúng) và tạo cảnh báo `DEPOSIT_LOCKOUT`; khi offline bộ đếm cùng ngưỡng nằm ở tủ (không lưu bền). Mã đúng xóa bộ đếm.
+
 ## 9. Cảnh báo (Rule Engine ở cloud)
 
 | Cảnh báo | Điều kiện |
@@ -138,6 +141,7 @@ sự kiện `OTP_LOCKOUT` và tạo cảnh báo. Khi online bộ đếm ở clou
 | DEPOSIT_CONFLICT | gửi hàng offline vào ngăn mà cloud cho là không trống (mục 7b) |
 | SMS_FAILED | không gửi được tin OTP sau `SMS_MAX_ATTEMPTS` lần |
 | COMMAND_FAILED | tủ trả `{"ok":false}` cho một RPC |
+| DEPOSIT_LOCKOUT | nhập sai mã đơn 10 lần liên tiếp ở một tủ (nghi dò mã đơn); cloud khóa gửi hàng ở tủ đó 15 phút |
 
 ## 10. Bảo mật
 
@@ -166,6 +170,7 @@ sự kiện `OTP_LOCKOUT` và tạo cảnh báo. Khi online bộ đếm ở clou
 
 - Tủ bị đánh cắp: `python tools/make_certs.py --revoke <device_id>` sinh lại `ca.crl` (Mosquitto đọc `crlfile`, tủ bị từ chối ở
   bước bắt tay TLS) và `POST /lockers/{id}/revoke` (hoặc `python -m app.cli revoke-locker`) cho backend bỏ qua dữ liệu của tủ.
+  Tủ phải được đăng ký trước (ADMIN: `POST /lockers`, hoặc `python -m app.cli register-locker`): `device_id` của firmware (`SECRET_DEVICE_ID`) phải trùng `locker_id`, nếu không backend bỏ qua mọi tin nhắn của thiết bị đó.
 - OTA A/B: `POST /lockers/{id}/ota {"url","sha256"}` (ADMIN, chỉ HTTPS). Tủ ghi ảnh vào phân vùng app còn lại (`ota_0`/`ota_1`
   của bảng phân vùng mặc định), kiểm SHA-256 rồi mới chọn phân vùng khởi động. Quay lui bằng phần mềm: ảnh mới phải nối được cloud
   và chạy `otaHealthySec` (30 s); nếu khởi động quá `otaMaxBoots` (3) lần mà chưa "khỏe" thì lần sau chọn lại phân vùng cũ.

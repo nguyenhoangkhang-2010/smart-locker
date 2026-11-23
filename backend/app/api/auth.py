@@ -5,12 +5,13 @@ import re
 import secrets
 
 import psycopg2.errors
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
 from .. import security, state
 from ..config import settings
 from ..db import query
+from ..hub import hub
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -27,40 +28,100 @@ class Refresh(BaseModel):
 def _tokens(user: dict) -> dict:
     return {
         "access_token": security.issue_access_token(user),
-        "refresh_token": security.issue_refresh_token(str(user["user_id"])),
+        "refresh_token": security.issue_refresh_token(str(user["user_id"]), user.get("token_epoch", 0)),
         "token_type": "bearer",
         "expires_in": settings.access_ttl_min * 60,
     }
 
 
 @router.post("/login")
-def login(body: Login):
-    key = f"loginfail:{body.phone}"
+def login(body: Login, request: Request):
+    ip = request.client.host if request.client else "?"
+    pair_key, phone_key = security.login_keys(body.phone, ip)
     lock_seconds = settings.login_lock_minutes * 60
-    count = int(state.kv.get(key) or 0)
-    if count >= settings.login_max_fails:
+    if int(state.kv.get(pair_key) or 0) >= settings.login_max_fails or int(state.kv.get(phone_key) or 0) >= settings.login_global_max_fails:
         raise HTTPException(429, "too many failed logins, try again later")
 
-    rows = query("SELECT user_id, phone, pw_hash, role, active FROM users WHERE phone = %s",
+    rows = query("SELECT user_id, phone, pw_hash, role, active, token_epoch FROM users WHERE phone = %s",
                  (body.phone,))
     user = rows[0] if rows else None
     ok = bool(user and user["active"] and security.verify_password(user["pw_hash"], body.password))
     if not ok:
-        state.kv.incr(key, lock_seconds)
+        state.kv.incr(pair_key, lock_seconds)
+        state.kv.incr(phone_key, lock_seconds)
+        security.audit({"sub": str(user["user_id"])} if user else None, "login_fail", None, None,
+                       f"ip={ip}" + ("" if user else f" phone={body.phone[:3]}***"))
         raise HTTPException(401, "wrong phone or password")   # cùng một thông báo cho mọi lý do
 
-    state.kv.delete(key)
+    state.kv.delete(pair_key)
+    state.kv.delete(phone_key)
+    security.audit({"sub": str(user["user_id"])}, "login_ok", None, None, f"ip={ip}")
     return _tokens(user)
 
 
 @router.post("/refresh")
 def refresh(body: Refresh):
-    user_id = security.consume_refresh_token(body.refresh_token)
-    rows = query("SELECT user_id, phone, role, active FROM users WHERE user_id = %s",
+    used = security.consume_refresh_token(body.refresh_token)
+    user_id, epoch = used if used else (None, 0)
+    rows = query("SELECT user_id, phone, role, active, token_epoch FROM users WHERE user_id = %s",
                  (user_id,)) if user_id else []
-    if not rows or not rows[0]["active"]:
+    if not rows or not rows[0]["active"] or rows[0]["token_epoch"] != epoch:      # phiên đã bị thu hồi (đổi/đặt lại mật khẩu...)
         raise HTTPException(401, "invalid refresh token")
     return _tokens(rows[0])
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# An toàn tài khoản (docs/EXTENSIONS.md mục 6): đăng xuất phía máy chủ, đổi mật khẩu (thu hồi mọi phiên cũ), đăng xuất mọi thiết bị,
+# xem các lần đăng nhập gần đây.
+# ---------------------------------------------------------------------------------------------------------------
+class Logout(BaseModel):
+    refresh_token: str
+
+
+class ChangePassword(BaseModel):
+    old_password: str
+    new_password: str
+
+
+@router.post("/logout")
+def logout(body: Logout):
+    """Hủy refresh token của thiết bị này (access token còn sống tối đa 15 phút)."""
+    security.revoke_refresh_token(body.refresh_token)
+    return {"ok": True}
+
+
+@router.post("/change-password")
+def change_password(body: ChangePassword, user=Depends(security.current_user)):
+    """Đổi mật khẩu: phải nhập đúng mật khẩu cũ. Mọi token cấp trước đó (kể cả của kẻ đang giữ phiên cũ) bị thu hồi; thiết bị này nhận token mới."""
+    security.require_password(user, body.old_password)
+    problem = security.password_problem(user["phone"], body.new_password)
+    if problem:
+        raise HTTPException(422, problem)
+    if body.new_password == body.old_password:
+        raise HTTPException(422, "new password must be different from the old one")
+    row = query("UPDATE users SET pw_hash = %s, token_epoch = token_epoch + 1 WHERE user_id = %s "
+                "RETURNING user_id, phone, role, token_epoch", (security.hash_password(body.new_password), user["sub"]))[0]
+    security.clear_login_failures(row["phone"])
+    hub.close_user(user["sub"])                              # đóng mọi WebSocket đang mở của tài khoản này
+    security.audit(user, "password_changed")
+    return _tokens(row)
+
+
+@router.post("/logout-all")
+def logout_all(user=Depends(security.current_user)):
+    """Đăng xuất mọi thiết bị (kể cả thiết bị này): mọi token đang có đều bị thu hồi."""
+    query("UPDATE users SET token_epoch = token_epoch + 1 WHERE user_id = %s", (user["sub"],))
+    hub.close_user(user["sub"])
+    security.audit(user, "logout_all")
+    return {"ok": True}
+
+
+@router.get("/recent-logins")
+def recent_logins(user=Depends(security.current_user)):
+    """10 sự kiện gần nhất về đăng nhập của chính mình (để phát hiện có người lạ thử mật khẩu hoặc đăng nhập)."""
+    return query("SELECT ts, action, detail FROM audit_log WHERE user_id = %s AND action IN "
+                 "('login_ok', 'login_fail', 'password_changed', 'password_reset', 'logout_all') ORDER BY id DESC LIMIT 10",
+                 (user["sub"],))
 
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -94,8 +155,9 @@ def register(body: Register):
         raise HTTPException(422, "account_type must be CUSTOMER or SHIPPER")
     if not PHONE_RE.match(body.phone):
         raise HTTPException(422, "phone must be 10 digits starting with 0")
-    if len(body.password) < 8 or body.password == body.phone:
-        raise HTTPException(422, "password must be at least 8 characters and different from the phone number")
+    problem = security.password_problem(body.phone, body.password)
+    if problem:
+        raise HTTPException(422, problem)
     name = (body.name or "").strip()[:60] or None
     if query("SELECT 1 FROM users WHERE phone = %s", (body.phone,)):
         raise HTTPException(409, "phone already registered")

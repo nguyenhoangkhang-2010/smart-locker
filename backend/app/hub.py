@@ -13,6 +13,7 @@ from dataclasses import dataclass
 class _Conn:
     loop: asyncio.AbstractEventLoop
     queue: asyncio.Queue
+    sub: str = ""                  # tài khoản sở hữu kết nối (để đóng khi thu hồi phiên)
 
 
 class Hub:
@@ -22,8 +23,8 @@ class Hub:
         self._conns: set[_Conn] = set()
         self._lock = threading.Lock()
 
-    def add(self) -> _Conn:
-        conn = _Conn(asyncio.get_running_loop(), asyncio.Queue(self.MAX_QUEUE))
+    def add(self, sub: str = "") -> _Conn:
+        conn = _Conn(asyncio.get_running_loop(), asyncio.Queue(self.MAX_QUEUE), sub)
         with self._lock:
             self._conns.add(conn)
         return conn
@@ -43,6 +44,16 @@ class Hub:
             try:
                 conn.loop.call_soon_threadsafe(self._put, conn, message)
             except RuntimeError:     # vòng lặp đã đóng
+                self.remove(conn)
+
+    def close_user(self, sub: str) -> None:
+        """Thu hồi phiên: bảo mọi kết nối của tài khoản này tự đóng (mã 4401), máy khách phải nối lại bằng token mới."""
+        with self._lock:
+            conns = [c for c in self._conns if c.sub == str(sub)]
+        for conn in conns:
+            try:
+                conn.loop.call_soon_threadsafe(self._put, conn, {"type": "__close__"})
+            except RuntimeError:
                 self.remove(conn)
 
     @staticmethod

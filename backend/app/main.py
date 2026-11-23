@@ -10,6 +10,7 @@ from pathlib import Path
 
 import jwt
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
+from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 
 from . import security, state
@@ -94,6 +95,7 @@ app.include_router(ops.router)
 app.include_router(biometric.router)
 
 STATIC = Path(__file__).resolve().parent / "static"
+app.mount("/vendor", StaticFiles(directory=STATIC / "vendor"), name="vendor")      # Leaflet đóng gói sẵn: không phụ thuộc CDN
 
 
 @app.get("/", include_in_schema=False)
@@ -110,6 +112,7 @@ async def live_updates(ws: WebSocket):
         first = json.loads(await asyncio.wait_for(ws.receive_text(), timeout=10))
         claims = jwt.decode(first["token"], security._keys()[1], algorithms=[settings.jwt_alg],
                             audience=settings.jwt_audience)
+        security.validate_claims(claims)
         if "dashboard:view" not in claims.get("perms", []):
             raise PermissionError
     except (WebSocketDisconnect, asyncio.TimeoutError):
@@ -118,7 +121,7 @@ async def live_updates(ws: WebSocket):
         await ws.close(code=4401)
         return
 
-    conn = hub.add()
+    conn = hub.add(claims["sub"])
     try:
         await ws.send_json({"type": "hello"})
         while True:
@@ -130,7 +133,11 @@ async def live_updates(ws: WebSocket):
             if receiver in done:
                 receiver.result()                                     # ném WebSocketDisconnect khi đóng
             if sender in done:
-                await ws.send_json(sender.result())
+                message = sender.result()
+                if message.get("type") == "__close__":                # phiên đã bị thu hồi
+                    await ws.close(code=4401)
+                    return
+                await ws.send_json(message)
     except WebSocketDisconnect:
         pass
     finally:

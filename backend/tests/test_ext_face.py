@@ -52,7 +52,7 @@ def faces(api, monkeypatch):
 
 
 def enroll(api, admin, phone="0900000002", image="alice-1", consent=True):
-    return api.post("/biometric/face/enroll", json={"phone": phone, "image_b64": b64(image), "consent": consent}, headers=admin)
+    return api.post("/biometric/face/enroll", json={"phone": phone, "image_b64": b64(image), "consent": consent, "password": PASSWORD}, headers=admin)
 
 
 @pytest.fixture
@@ -65,7 +65,7 @@ def users(faces):
 def test_endpoints_are_404_when_the_feature_is_off(api):
     assert settings.face_enabled is False                                           # conftest đặt lại mặc định
     admin = headers(api, "ADMIN", "0900000001")
-    assert api.post("/biometric/face/enroll", json={"phone": "x", "image_b64": b64("a"), "consent": True}, headers=admin).status_code == 404
+    assert api.post("/biometric/face/enroll", json={"phone": "x", "image_b64": b64("a"), "consent": True, "password": PASSWORD}, headers=admin).status_code == 404
     assert api.post("/biometric/face/verify", json={"image_b64": b64("a")}, headers=admin).status_code == 404
 
 
@@ -85,9 +85,10 @@ def test_only_a_feature_vector_is_stored_never_the_image(faces, users):
     enroll(faces, admin)
     cols = {r["column_name"]: r["data_type"] for r in query(
         "SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'face_templates'")}
-    assert "bytea" not in cols.values() and cols["embedding"] == "ARRAY"
-    row = query("SELECT embedding, consent_at FROM face_templates")[0]
-    assert len(row["embedding"]) == 128 and row["consent_at"] is not None
+    assert set(cols) == {"user_id", "embedding", "embedding_enc", "consent_at", "created_at"}      # không có cột nào chứa ảnh
+    row = query("SELECT embedding, embedding_enc, consent_at FROM face_templates")[0]
+    assert row["embedding"] is None and row["consent_at"] is not None                                # bản rõ không còn, chỉ có bản mã hóa
+    assert len(bytes(row["embedding_enc"])) < 1024 and len(face.unseal(row["embedding_enc"])) == 128  # đúng 128 số, không thể là ảnh
     assert "embedding" not in str(faces.get("/biometric/face", headers=admin).json())   # danh sách không lộ vector
 
 
@@ -95,7 +96,7 @@ def test_bad_images_are_rejected_with_a_reason(faces, users):
     admin, _ = users
     assert enroll(faces, admin, image="noface-1").json()["detail"]["error"] == "NO_FACE"
     assert enroll(faces, admin, image="many-1").json()["detail"]["error"] == "MANY_FACES"
-    assert faces.post("/biometric/face/enroll", json={"phone": "0900000002", "image_b64": "***", "consent": True}, headers=admin).status_code == 422
+    assert faces.post("/biometric/face/enroll", json={"phone": "0900000002", "image_b64": "***", "consent": True, "password": PASSWORD}, headers=admin).status_code == 422
 
 
 # ===================================================================== xác minh
@@ -139,13 +140,16 @@ def test_remote_open_can_require_a_recent_face_check(faces, users, monkeypatch, 
     admin, operator = users
     enroll(faces, admin)
     url = f"/lockers/{LOCKER}/compartments/3/open"
-    assert faces.post(url, headers=operator).status_code == 200                       # mặc định: không bắt buộc
+    monkeypatch.setattr(settings, "face_auto_require", False)
+    assert faces.post(url, headers=operator).status_code == 200                       # tắt chế độ tự động: không bắt buộc
 
     monkeypatch.setattr(settings, "face_required_for_remote_open", True)
     refused = faces.post(url, headers=operator)
     assert refused.status_code == 403 and refused.json()["detail"]["error"] == "FACE_REQUIRED"
     faces.post("/biometric/face/verify", json={"image_b64": b64("alice-2")}, headers=operator)
     assert faces.post(url, headers=operator).status_code == 200                       # vừa xác minh: được mở
+    assert faces.post(url, headers=operator).status_code == 403                       # nhưng chỉ một lần cho mỗi lần xác minh
+    faces.post("/biometric/face/verify", json={"image_b64": b64("alice-2")}, headers=operator)
     clock.advance(121)
     assert faces.post(url, headers=operator).status_code == 403                       # hết cửa sổ 2 phút: phải xác minh lại
 
@@ -175,7 +179,7 @@ def test_real_models_match_the_same_photo_at_another_scale_and_reject_non_faces(
     def jpg(img):
         return base64.b64encode(cv2.imencode(".jpg", img)[1].tobytes()).decode()
 
-    assert faces.post("/biometric/face/enroll", json={"phone": "0900000002", "image_b64": jpg(photo), "consent": True}, headers=admin).status_code == 201
+    assert faces.post("/biometric/face/enroll", json={"phone": "0900000002", "image_b64": jpg(photo), "consent": True, "password": PASSWORD}, headers=admin).status_code == 201
     res = faces.post("/biometric/face/verify", json={"image_b64": jpg(other)}, headers=operator).json()
     assert res["match"] is True and res["score"] > 0.8
     blank = faces.post("/biometric/face/verify", json={"image_b64": jpg(np.full((300, 300, 3), 128, np.uint8))}, headers=operator)

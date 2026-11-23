@@ -21,6 +21,8 @@ from tests.fake_locker import FakeLocker
 from tests.test_api import PASSWORD, api, headers, keypair, login, make_user  # noqa: F401 (fixture)
 from tests.test_flow import PARCEL, count, sms_code
 
+CP = {"confirm_password": PASSWORD}                  # ADMIN nhập lại mật khẩu cho thao tác nguy hiểm
+
 LOCKER = "LOCKER-HCM-001"
 
 
@@ -407,7 +409,7 @@ def test_creating_a_parcel_for_a_locker_announces_it_to_that_locker(api, cloud, 
 def test_ota_update_is_admin_only_https_only_and_validated(api, cloud, bus):
     locker = FakeLocker(bus)
     admin, operator = headers(api, "ADMIN", "0900000001"), headers(api, "OPERATOR", "0900000002")
-    body = {"url": "https://updates.example.com/fw-2.2.0.bin", "sha256": "A" * 64}
+    body = {"url": "https://updates.example.com/fw-2.2.0.bin", "sha256": "A" * 64, "confirm_password": PASSWORD}
     assert api.post(f"/lockers/{LOCKER}/ota", json=body, headers=operator).status_code == 403
     assert api.post(f"/lockers/{LOCKER}/ota", json={**body, "url": "http://plain.example/fw.bin"}, headers=admin).status_code == 422
     assert api.post(f"/lockers/{LOCKER}/ota", json={**body, "sha256": "xyz"}, headers=admin).status_code == 422
@@ -420,10 +422,10 @@ def test_ota_update_is_admin_only_https_only_and_validated(api, cloud, bus):
 def test_revoking_a_locker_over_the_api(api, cloud, bus):
     locker = FakeLocker(bus)
     admin, operator = headers(api, "ADMIN", "0900000001"), headers(api, "OPERATOR", "0900000002")
-    assert api.post(f"/lockers/{LOCKER}/revoke", headers=operator).status_code == 403
-    res = api.post(f"/lockers/{LOCKER}/revoke", headers=admin)
+    assert api.post(f"/lockers/{LOCKER}/revoke", json=CP, headers=operator).status_code == 403
+    res = api.post(f"/lockers/{LOCKER}/revoke", json=CP, headers=admin)
     assert res.status_code == 200 and LOCKER in res.json()["next_step"]
-    assert api.post(f"/lockers/{LOCKER}/revoke", headers=admin).status_code == 404
+    assert api.post(f"/lockers/{LOCKER}/revoke", json=CP, headers=admin).status_code == 404
     locker.event(pb.HEARTBEAT)
     assert count("locker_events") == 0
 

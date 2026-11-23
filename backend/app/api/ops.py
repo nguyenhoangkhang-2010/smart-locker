@@ -8,6 +8,7 @@ from pydantic import BaseModel
 
 from .. import security, state
 from ..db import query
+from ..hub import hub
 import re
 
 from ..config import settings
@@ -32,6 +33,89 @@ def list_lockers(user=Depends(security.require("dashboard:view"))):
                (SELECT count(*) FROM alerts a
                  WHERE a.locker_id = l.locker_id AND NOT a.acknowledged) AS open_alerts
         FROM lockers l ORDER BY l.locker_id""")
+
+
+LOCKER_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{2,63}$")          # nằm trong tên topic MQTT: cấm / + # và khoảng trắng
+SIZE_CODES = re.compile(r"^[SML]{1,16}$")                              # firmware giới hạn 16 ngăn (MAX_COMP)
+
+
+def _clean_text(value: Optional[str], limit: int, field: str) -> Optional[str]:
+    value = (value or "").strip()
+    if len(value) > limit:
+        raise HTTPException(422, f"{field} must be at most {limit} characters")
+    return value or None
+
+
+def _check_location(lat, lon):
+    if (lat is None) != (lon is None):
+        raise HTTPException(422, "lat and lon must be given together")
+    if lat is not None and not (-90 <= lat <= 90 and -180 <= lon <= 180):
+        raise HTTPException(422, "lat must be within ±90 and lon within ±180")
+
+
+class NewLocker(BaseModel):
+    locker_id: str
+    name: str
+    address: Optional[str] = None
+    lat: Optional[float] = None
+    lon: Optional[float] = None
+    sizes: str = locker_svc.DEFAULT_SIZES          # chữ S/M/L theo thứ tự ngăn; phải khớp SECRET_COMP_SIZES của firmware
+    confirm_password: str
+
+
+class EditLocker(BaseModel):
+    name: Optional[str] = None
+    address: Optional[str] = None                  # có trong yêu cầu mà để trống/null = xóa địa chỉ
+    lat: Optional[float] = None                    # lat + lon cùng null = gỡ khỏi bản đồ
+    lon: Optional[float] = None
+    confirm_password: str
+
+
+@router.post("/lockers", status_code=201)
+def create_locker(body: NewLocker, user=Depends(security.require("admin:manage"))):
+    """ADMIN thêm tủ mới (thay cho `register-locker` ở dòng lệnh). Backend bỏ qua mọi tin của tủ chưa đăng ký,
+    nên phải làm bước này trước rồi mới nạp firmware có SECRET_DEVICE_ID trùng `locker_id`."""
+    security.require_password(user, body.confirm_password)
+    locker_id = body.locker_id.strip()
+    if not LOCKER_ID.match(locker_id):
+        raise HTTPException(422, "locker_id must be 3-64 characters: letters, digits, '-' or '_'")
+    name = _clean_text(body.name, 80, "name")
+    if not name:
+        raise HTTPException(422, "name is required")
+    if not SIZE_CODES.match(body.sizes):
+        raise HTTPException(422, "sizes must be 1-16 letters from S, M, L")
+    address = _clean_text(body.address, 200, "address")
+    _check_location(body.lat, body.lon)
+    if not locker_svc.create_locker(locker_id, name, body.sizes, address, body.lat, body.lon):
+        raise HTTPException(409, "locker_id already exists")
+    security.audit(user, "create_locker", locker_id, None, f"{name}; {len(body.sizes)} compartments")
+    return {"locker_id": locker_id, "name": name, "compartments": len(body.sizes)}
+
+
+@router.patch("/lockers/{locker_id}")
+def edit_locker(locker_id: str, body: EditLocker, user=Depends(security.require("admin:manage"))):
+    """ADMIN sửa tên, địa chỉ, vị trí trên bản đồ. Không đổi mã tủ và các ngăn (đã gắn với firmware và đơn hàng)."""
+    security.require_password(user, body.confirm_password)
+    given = body.model_fields_set
+    changes: dict = {}
+    if "name" in given:
+        name = _clean_text(body.name, 80, "name")
+        if not name:
+            raise HTTPException(422, "name cannot be empty")
+        changes["name"] = name
+    if "address" in given:
+        changes["address"] = _clean_text(body.address, 200, "address")
+    if "lat" in given or "lon" in given:
+        if "lat" not in given or "lon" not in given:
+            raise HTTPException(422, "lat and lon must be given together")
+        _check_location(body.lat, body.lon)
+        changes["location"] = None if body.lat is None else (body.lat, body.lon)
+    if not changes:
+        raise HTTPException(422, "nothing to change")
+    if not locker_svc.update_locker(locker_id, changes):
+        raise HTTPException(404, "locker not found")
+    security.audit(user, "edit_locker", locker_id, None, ", ".join(sorted(changes)))
+    return {"updated": sorted(changes)}
 
 
 @router.get("/lockers/available")
@@ -234,12 +318,25 @@ class NewUser(BaseModel):
     password: str
     role: str
     name: Optional[str] = None
+    confirm_password: str                       # mật khẩu của ADMIN đang thao tác (xác nhận lại)
+
+
+class Confirm(BaseModel):
+    confirm_password: str
+
+
+class ResetPassword(BaseModel):
+    phone: str
+    new_password: str
+    confirm_password: str
 
 
 @router.post("/users", status_code=201)
 def create_user(body: NewUser, user=Depends(security.require("admin:manage"))):
-    if len(body.password) < 8:
-        raise HTTPException(422, "password must be at least 8 characters")
+    security.require_password(user, body.confirm_password)
+    problem = security.password_problem(body.phone, body.password)
+    if problem:
+        raise HTTPException(422, problem)
     if not re.fullmatch(r"0\d{9}", body.phone):
         raise HTTPException(422, "phone must be 10 digits starting with 0")
     if body.role not in ("ADMIN", "OPERATOR", "SHIPPER", "CUSTOMER"):
@@ -274,7 +371,8 @@ def _pending_or_404(user_id: str) -> str:
 
 
 @router.post("/users/{user_id}/approve")
-def approve_user(user_id: str, user=Depends(security.require("admin:manage"))):
+def approve_user(user_id: str, body: Confirm, user=Depends(security.require("admin:manage"))):
+    security.require_password(user, body.confirm_password)
     uid = _pending_or_404(user_id)
     row = query("UPDATE users SET role = 'SHIPPER' WHERE user_id = %s RETURNING phone", (uid,))[0]
     security.audit(user, "approve_shipper", None, None, row["phone"])
@@ -282,11 +380,33 @@ def approve_user(user_id: str, user=Depends(security.require("admin:manage"))):
 
 
 @router.post("/users/{user_id}/reject")
-def reject_user(user_id: str, user=Depends(security.require("admin:manage"))):
+def reject_user(user_id: str, body: Confirm, user=Depends(security.require("admin:manage"))):
+    security.require_password(user, body.confirm_password)
     uid = _pending_or_404(user_id)
     row = query("UPDATE users SET active = false WHERE user_id = %s RETURNING phone", (uid,))[0]
     security.audit(user, "reject_shipper", None, None, row["phone"])
     return {"rejected": row["phone"]}
+
+
+@router.post("/users/reset-password")
+def reset_password(body: ResetPassword, user=Depends(security.require("admin:manage"))):
+    """ADMIN đặt lại mật khẩu cho người khác (quên mật khẩu, nghi bị lộ). Mọi phiên cũ của người đó bị thu hồi. Không dùng cho chính mình
+    (dùng đổi mật khẩu)."""
+    security.require_password(user, body.confirm_password)
+    target = query("SELECT user_id, phone FROM users WHERE phone = %s AND active", (body.phone,))
+    if not target:
+        raise HTTPException(404, "user not found")
+    if str(target[0]["user_id"]) == user["sub"]:
+        raise HTTPException(422, "use change-password for your own account")
+    problem = security.password_problem(body.phone, body.new_password)
+    if problem:
+        raise HTTPException(422, problem)
+    query("UPDATE users SET pw_hash = %s, token_epoch = token_epoch + 1 WHERE user_id = %s",
+          (security.hash_password(body.new_password), target[0]["user_id"]))
+    security.clear_login_failures(body.phone)
+    hub.close_user(str(target[0]["user_id"]))
+    security.audit(user, "password_reset", None, None, body.phone)
+    return {"reset": body.phone}
 
 
 @router.get("/users")
@@ -346,12 +466,14 @@ SHA256_HEX = re.compile(r"^[0-9a-fA-F]{64}$")
 class OtaRequest(BaseModel):
     url: str
     sha256: str
+    confirm_password: str                       # mật khẩu của ADMIN đang thao tác (xác nhận lại)
 
 
 @router.post("/lockers/{locker_id}/ota")
 def ota_update(locker_id: str, body: OtaRequest, user=Depends(security.require("admin:manage"))):
     """Ra lệnh cập nhật firmware OTA A/B. Tủ tải `url`, kiểm SHA-256, ghi vào phân vùng còn lại rồi khởi động lại;
     ảnh mới không chạy ổn thì tự quay lui (lib/edge_core/ota_guard.h). Tủ đang ngủ sâu nhận lệnh ở lần thức sau."""
+    security.require_password(user, body.confirm_password)
     if not locker_svc.exists(locker_id):
         raise HTTPException(404, "locker not found")
     if not SHA256_HEX.match(body.sha256):
@@ -365,9 +487,10 @@ def ota_update(locker_id: str, body: OtaRequest, user=Depends(security.require("
 
 
 @router.post("/lockers/{locker_id}/revoke")
-def revoke_locker(locker_id: str, user=Depends(security.require("admin:manage"))):
+def revoke_locker(locker_id: str, body: Confirm, user=Depends(security.require("admin:manage"))):
     """Thu hồi tủ bị đánh cắp: backend ngừng nhận dữ liệu của nó ngay. Để broker cũng chặn ở tầng TLS, thêm chứng chỉ
     của tủ vào CRL:  python tools/make_certs.py --revoke <device_id>  rồi nạp lại Mosquitto."""
+    security.require_password(user, body.confirm_password)
     if not locker_svc.revoke(locker_id):
         raise HTTPException(404, "locker not found or already revoked")
     security.audit(user, "revoke_locker", locker_id)
